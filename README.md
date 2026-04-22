@@ -1,7 +1,7 @@
 # Informatics43project
 Prototype app development
 
-Meeting #1 (4/15/26) In-Person-
+Meeting #1 (4/15/26) In-Person
 Inesh Agarwal
 Sinjon Dearborn
 Jayden Jieyu Lee
@@ -12,3 +12,16 @@ Discussed the documentation process for homework 1. Added everyone to the groupc
 
 
 ![Alt Text](https://media1.tenor.com/m/wuwDiA0OQhQAAAAd/btd6-bloons.gif)
+
+
+Meeting #2 (4/22/26) In-Person
+Inesh Agarwal
+Sinjon Dearborn
+Jayden Jieyu Lee
+Annika Liu
+Justin Gia Tran
+
+We created a pitch for our app, worked some more on the requirements specifications. Presented in class
+
+
+<img src="https://media1.tenor.com/m/v9E1MSawA4kAAAAd/monkey-bloons-td6.gif" alt="Alt Text" width="200"/>
