@@ -11,7 +11,7 @@ Justin Gia Tran
 Discussed the documentation process for homework 1. Added everyone to the groupchat and GitHub repo and started the process of Requirement Specification. We discussed many features that could be implemented, including the optional features and our own features. Will continue working on this outside of class
 
 
-![Alt Text](https://media1.tenor.com/m/wuwDiA0OQhQAAAAd/btd6-bloons.gif)
+<img src="https://media1.tenor.com/m/wuwDiA0OQhQAAAAd/btd6-bloons.gif" alt="Alt Text" width="200"/>
 
 
 Meeting #2 (4/22/26) In-Person
