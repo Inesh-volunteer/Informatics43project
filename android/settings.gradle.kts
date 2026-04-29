@@ -22,5 +22,5 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "beacon"
+rootProject.name = "Hey There!"
 include(":app")
