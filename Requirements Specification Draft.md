@@ -7,7 +7,7 @@ REQUIREMENTS SPECIFICATION
 
 **APP TITLE:**
 
-*Hey There\!*
+### *Hey There\!*
 
 Inesh Agarwal(Inesha1@uci.edu)  
 Sinjon Dearborn(sdearbor@uci.edu),   
