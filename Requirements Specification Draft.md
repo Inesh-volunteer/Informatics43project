@@ -12,7 +12,7 @@ REQUIREMENTS SPECIFICATION
 Inesh Agarwal(Inesha1@uci.edu)  
 Sinjon Dearborn(sdearbor@uci.edu),   
 Jayden Lee(jaydenl9@uci.edu),   
-Justin Tran(justt13@uci.edu), and  
+Justin Tran(jgtran1@uci.edu), and  
  Annika Liu(annikl5@uci.edu)
 
 # Tab 3
