@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "771377290496",
+    "project_id": "heythere-app-494820",
+    "storage_bucket": "heythere-app-494820.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:771377290496:android:95362584942c7f91e127e5",
+        "android_client_info": {
+          "package_name": "com.yolojj333.heythere"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBDqm5YQjjCm2eYWzFdqrdE9JtBiJplYGU"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
