@@ -23,3 +23,5 @@ Meeting #3 (5/6/26) In-Person
 Inesh Agarwal, Sinjon Dearborn, Jayden Jieyu Lee, Annika Liu, Justin Gia Tran
 
 Discussed architectural summary, went over Android app prototype, decided to create an iOS app as well. Worked on HW 2, assigned roles, planned meeting to finish the assignment.
+
+<img src="https://tenor.com/view/bloons-breakdancing-tsg-gif-5985239059490016884" alt="Alt Text" width="200"/>
