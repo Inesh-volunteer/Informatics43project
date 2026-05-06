@@ -17,3 +17,9 @@ We created a pitch for our app, worked some more on the requirements specificati
 
 
 <img src="https://media1.tenor.com/m/v9E1MSawA4kAAAAd/monkey-bloons-td6.gif" alt="Alt Text" width="200"/>
+
+
+Meeting #3 (5/6/26) In-Person
+Inesh Agarwal, Sinjon Dearborn, Jayden Jieyu Lee, Annika Liu, Justin Gia Tran
+
+Discussed architectural summary, went over Android app prototype, decided to create an iOS app as well. Worked on HW 2, assigned roles, planned meeting to finish the assignment.
