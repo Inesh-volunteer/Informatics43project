@@ -31,4 +31,4 @@ Inesh Agarwal, Sinjon Dearborn, Jayden Jieyu Lee, Annika Liu, Justin Gia Tran
 
 Dicussed how we will divide the work out for HW 2, and discussed our plans for future parts of the assignment such as UI creation and overall design implementation. Additionally, we went over a base timeline and ideas for pushing our project forward. 
 
-<img width="200" height="200" alt="image" src="https://github.com/user-attachments/assets/56ae8462-ae8b-4001-be5b-afdece28d342" />
+<img src="https://github.com/user-attachments/assets/56ae8462-ae8b-4001-be5b-afdece28d342" alt="Alt Text" width="200" height="200" />
