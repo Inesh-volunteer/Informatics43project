@@ -25,3 +25,10 @@ Inesh Agarwal, Sinjon Dearborn, Jayden Jieyu Lee, Annika Liu, Justin Gia Tran
 Discussed architectural summary, went over Android app prototype, decided to create an iOS app as well. Worked on HW 2, assigned roles, planned meeting to finish the assignment.
 
 <img src="https://media1.tenor.com/m/Uw_XNqSyDnQAAAAC/bloons-breakdancing.gif" alt="Alt Text" width="200"/>
+
+Meeting #4 (5/9/26) Online
+Inesh Agarwal, Sinjon Dearborn, Jayden Jieyu Lee, Annika Liu, Justin Gia Tran
+
+Dicussed how we will divide the work out for HW 2, and discussed our plans for future parts of the assignment such as UI creation and overall design implementation. Additionally, we went over a base timeline and ideas for pushing our project forward. 
+
+<img width="200" height="200" alt="image" src="https://github.com/user-attachments/assets/56ae8462-ae8b-4001-be5b-afdece28d342" />
