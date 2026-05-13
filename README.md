@@ -38,4 +38,4 @@ Inesh Agarwal, Sinjon Dearborn, Jayden Jieyu Lee, Annika Liu, Justin Gia Tran
 
 Discussed about signing up for the demo slots, talked about HW #3 -- one person should do the assignment since it seems easy, and one person can manage it 
 
-<img width="250" height="313" alt="image" src="https://github.com/user-attachments/assets/f0a05bb5-2827-4e42-a3fd-8072dcdb9a03" />
+[<img width="250" height="313" alt="image" src="https://github.com/user-attachments/assets/f0a05bb5-2827-4e42-a3fd-8072dcdb9a03" />](https://tenor.com/view/dart-monke-dart-monkey-btd6-bloons-td-bloons-tower-defense-gif-20978585)
