@@ -32,3 +32,10 @@ Inesh Agarwal, Sinjon Dearborn, Jayden Jieyu Lee, Annika Liu, Justin Gia Tran
 Dicussed how we will divide the work out for HW 2, and discussed our plans for future parts of the assignment such as UI creation and overall design implementation. Additionally, we went over a base timeline and ideas for pushing our project forward. 
 
 <img src="https://media2.giphy.com/media/v1.Y2lkPTc5MGI3NjExb2x5bHFuZHE4MXJjeTlqaHRweWZia3l4dTdteXR6ZmRmcnRhbHU1MCZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/fzj87vYM8EgvcungmC/giphy.gif" alt="Alt Text" width="200"/>
+
+Meeting #5 (5/13/26) In-Person
+Inesh Agarwal, Sinjon Dearborn, Jayden Jieyu Lee, Annika Liu, Justin Gia Tran
+
+Discussed about signing up for the demo slots, talked about HW #3 -- one person should do the assignment since it seems easy, and one person can manage it 
+
+<img width="250" height="313" alt="image" src="https://github.com/user-attachments/assets/f0a05bb5-2827-4e42-a3fd-8072dcdb9a03" />
