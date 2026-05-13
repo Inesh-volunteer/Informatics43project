@@ -38,5 +38,5 @@ Inesh Agarwal, Sinjon Dearborn, Jayden Jieyu Lee, Annika Liu, Justin Gia Tran
 
 Discussed about signing up for the demo slots, talked about HW #3 -- one person should do the assignment since it seems easy, and one person can manage it 
 
-<img width="374" height="205" alt="image" src="https://github.com/user-attachments/assets/7a43b729-a99a-44de-b19f-7c36bfee85ec" />
+<img width="374" height="205" alt="btd6-jjk" src="https://github.com/user-attachments/assets/c2fd6577-ece8-4072-bcf7-b8bff6625b35" />
 
