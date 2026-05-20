@@ -240,11 +240,7 @@ fun BeaconMapScreen(
     val context = LocalContext.current
     val fusedLocationClient = remember { LocationServices.getFusedLocationProviderClient(context) }
 
-    // We no longer need the 'myRealLocation' state variable because Google Maps
-    // handles the blue dot for us automatically now!
-
     DisposableEffect(currentUser.privacySettings.usePreciseLocation, hasLocationPermission) {
-        // Create the callback that will trigger every time the phone senses movement
         val locationCallback = object : com.google.android.gms.location.LocationCallback() {
             override fun onLocationResult(result: com.google.android.gms.location.LocationResult) {
                 result.lastLocation?.let { location ->
@@ -254,7 +250,6 @@ fun BeaconMapScreen(
                     val broadcastLat = if (currentUser.privacySettings.usePreciseLocation) exactLatLng.latitude else noiseLatLng.latitude
                     val broadcastLng = if (currentUser.privacySettings.usePreciseLocation) exactLatLng.longitude else noiseLatLng.longitude
 
-                    // Only update Firebase if the coordinates actually changed to save bandwidth
                     if (currentUser.locationData.publicLatitude != broadcastLat || currentUser.locationData.publicLongitude != broadcastLng) {
                         val newLocationData = LocationData(
                             publicLatitude = broadcastLat,
@@ -270,7 +265,6 @@ fun BeaconMapScreen(
         }
 
         if (hasLocationPermission) {
-            // Request high accuracy updates roughly every 5 seconds
             val locationRequest = com.google.android.gms.location.LocationRequest.Builder(
                 com.google.android.gms.location.Priority.PRIORITY_HIGH_ACCURACY,
                 5000L
@@ -283,13 +277,11 @@ fun BeaconMapScreen(
             )
         }
 
-        // Cleanup: Stop tracking when the user leaves the map screen
         onDispose {
             fusedLocationClient.removeLocationUpdates(locationCallback)
         }
     }
 
-    // Turn Google's native blue dot back on!
     val mapProperties = MapProperties(
         isMyLocationEnabled = hasLocationPermission
     )
@@ -335,8 +327,11 @@ fun BeaconMapScreen(
         }
 
         // Draw YOUR Broadcast Location (Orange Marker)
-        // You will now see this pin move separately from your blue dot if approximate location is on!
-        if (currentUser.privacySettings.isGlobalLocationOn && currentUser.locationData.publicLatitude != 0.0 && currentUser.locationData.publicLongitude != 0.0) {
+        // CRITICAL FIX: Only draw if global location is ON AND precise location is OFF.
+        if (currentUser.privacySettings.isGlobalLocationOn &&
+            !currentUser.privacySettings.usePreciseLocation &&
+            currentUser.locationData.publicLatitude != 0.0 &&
+            currentUser.locationData.publicLongitude != 0.0) {
             Marker(
                 state = MarkerState(
                     position = LatLng(currentUser.locationData.publicLatitude, currentUser.locationData.publicLongitude)
