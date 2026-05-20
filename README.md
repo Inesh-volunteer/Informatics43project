@@ -40,3 +40,10 @@ Discussed about signing up for the demo slots, talked about HW #3 -- one person 
 
 <img width="374" height="205" alt="btd6-jjk" src="https://github.com/user-attachments/assets/c2fd6577-ece8-4072-bcf7-b8bff6625b35" />
 
+Meeting #6 (5/20/26) In-Person
+Inesh Agarwal, Sinjon Dearborn, Jayden Jieyu Lee, Annika Liu, Justin Gia Tran
+
+Discussed future implementation for the app as well as UI design and working on IOS version of the app.
+
+<img width="427" height="427" alt="giphy" src="https://github.com/user-attachments/assets/62c50bb0-bfbe-4535-94ec-39158aaf70dc" />
+
