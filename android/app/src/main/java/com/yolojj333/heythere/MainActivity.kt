@@ -240,50 +240,46 @@ fun BeaconMapScreen(
     val context = LocalContext.current
     val fusedLocationClient = remember { LocationServices.getFusedLocationProviderClient(context) }
 
-    DisposableEffect(currentUser.privacySettings.usePreciseLocation, hasLocationPermission) {
-        val locationCallback = object : com.google.android.gms.location.LocationCallback() {
-            override fun onLocationResult(result: com.google.android.gms.location.LocationResult) {
-                result.lastLocation?.let { location ->
+    var myRealLocation by remember { mutableStateOf<LatLng?>(null) }
+
+    // NEW: A ticking clock that forces the map to refresh every 60 seconds
+    var currentTick by remember { mutableStateOf(System.currentTimeMillis()) }
+    LaunchedEffect(Unit) {
+        while (true) {
+            kotlinx.coroutines.delay(60_000L)
+            currentTick = System.currentTimeMillis()
+        }
+    }
+
+    LaunchedEffect(currentUser.privacySettings.usePreciseLocation, hasLocationPermission) {
+        if (hasLocationPermission) {
+            fusedLocationClient.lastLocation.addOnSuccessListener { location ->
+                if (location != null) {
                     val exactLatLng = LatLng(location.latitude, location.longitude)
+                    myRealLocation = exactLatLng
+
                     val noiseLatLng = LocationUtils.applyLocationNoise(exactLatLng)
 
                     val broadcastLat = if (currentUser.privacySettings.usePreciseLocation) exactLatLng.latitude else noiseLatLng.latitude
                     val broadcastLng = if (currentUser.privacySettings.usePreciseLocation) exactLatLng.longitude else noiseLatLng.longitude
 
-                    if (currentUser.locationData.publicLatitude != broadcastLat || currentUser.locationData.publicLongitude != broadcastLng) {
-                        val newLocationData = LocationData(
-                            publicLatitude = broadcastLat,
-                            publicLongitude = broadcastLng,
-                            lastUpdatedTimestamp = System.currentTimeMillis()
-                        )
+                    val newLocationData = LocationData(
+                        publicLatitude = broadcastLat,
+                        publicLongitude = broadcastLng,
+                        lastUpdatedTimestamp = System.currentTimeMillis()
+                    )
 
-                        val updatedUser = currentUser.copy(locationData = newLocationData)
-                        onUserUpdate(updatedUser)
-                    }
+                    val updatedUser = currentUser.copy(locationData = newLocationData)
+                    onUserUpdate(updatedUser)
+
+                    cameraPositionState.position = CameraPosition.fromLatLngZoom(exactLatLng, 14f)
                 }
             }
-        }
-
-        if (hasLocationPermission) {
-            val locationRequest = com.google.android.gms.location.LocationRequest.Builder(
-                com.google.android.gms.location.Priority.PRIORITY_HIGH_ACCURACY,
-                5000L
-            ).build()
-
-            fusedLocationClient.requestLocationUpdates(
-                locationRequest,
-                locationCallback,
-                android.os.Looper.getMainLooper()
-            )
-        }
-
-        onDispose {
-            fusedLocationClient.removeLocationUpdates(locationCallback)
         }
     }
 
     val mapProperties = MapProperties(
-        isMyLocationEnabled = hasLocationPermission
+        isMyLocationEnabled = false
     )
 
     val uiSettings = MapUiSettings(
@@ -291,15 +287,30 @@ fun BeaconMapScreen(
         zoomControlsEnabled = false
     )
 
-    val filteredUsers = remember(currentUser.subscribedTags, allCloudUsers, currentUser.privacySettings.isGlobalLocationOn, hasLocationPermission) {
+    // THE RULE: Filter out users without permissions, without shared tags, AND who have been offline for >10 minutes.
+    val filteredUsers = remember(
+        currentUser.subscribedTags,
+        allCloudUsers,
+        currentUser.privacySettings.isGlobalLocationOn,
+        hasLocationPermission,
+        currentTick // Passing the tick here forces this block to re-run every minute
+    ) {
         if (!hasLocationPermission || !currentUser.privacySettings.isGlobalLocationOn) {
             emptyList()
         } else {
-            val otherUsers = allCloudUsers.filter { it.userId != currentUser.userId && it.privacySettings.isGlobalLocationOn }
+            val tenMinutesInMillis = 10 * 60 * 1000L
+
+            // Filter out ourselves, hidden users, AND stale locations
+            val activeUsers = allCloudUsers.filter {
+                it.userId != currentUser.userId &&
+                        it.privacySettings.isGlobalLocationOn &&
+                        (currentTick - it.locationData.lastUpdatedTimestamp) <= tenMinutesInMillis
+            }
+
             if (currentUser.subscribedTags.isEmpty()) {
-                otherUsers
+                activeUsers
             } else {
-                otherUsers.filter { cloudUser ->
+                activeUsers.filter { cloudUser ->
                     cloudUser.subscribedTags.any { tag -> currentUser.subscribedTags.contains(tag) }
                 }
             }
@@ -312,7 +323,6 @@ fun BeaconMapScreen(
         properties = mapProperties,
         uiSettings = uiSettings
     ) {
-        // Draw OTHER users
         filteredUsers.forEach { user ->
             if (user.locationData.publicLatitude != 0.0 && user.locationData.publicLongitude != 0.0) {
                 val position = LatLng(user.locationData.publicLatitude, user.locationData.publicLongitude)
@@ -326,8 +336,6 @@ fun BeaconMapScreen(
             }
         }
 
-        // Draw YOUR Broadcast Location (Orange Marker)
-        // CRITICAL FIX: Only draw if global location is ON AND precise location is OFF.
         if (currentUser.privacySettings.isGlobalLocationOn &&
             !currentUser.privacySettings.usePreciseLocation &&
             currentUser.locationData.publicLatitude != 0.0 &&
@@ -339,6 +347,15 @@ fun BeaconMapScreen(
                 title = "You (Broadcasted)",
                 snippet = "This is where others see you",
                 icon = BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_ORANGE)
+            )
+        }
+
+        myRealLocation?.let { realLatLng ->
+            Marker(
+                state = MarkerState(position = realLatLng),
+                title = "You (Actual Device)",
+                snippet = "Your true GPS location",
+                icon = BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_AZURE)
             )
         }
     }
