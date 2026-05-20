@@ -1,4 +1,5 @@
 package com.yolojj333.heythere
+
 import android.Manifest
 import android.annotation.SuppressLint
 import android.os.Bundle
@@ -20,6 +21,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import com.google.android.gms.location.LocationServices
+import com.google.android.gms.maps.model.BitmapDescriptorFactory
 import com.google.android.gms.maps.model.CameraPosition
 import com.google.android.gms.maps.model.LatLng
 import com.google.firebase.auth.FirebaseAuth
@@ -27,6 +29,8 @@ import com.google.maps.android.compose.CameraPositionState
 import com.google.maps.android.compose.GoogleMap
 import com.google.maps.android.compose.MapProperties
 import com.google.maps.android.compose.MapUiSettings
+import com.google.maps.android.compose.Marker
+import com.google.maps.android.compose.MarkerState
 import com.google.maps.android.compose.rememberCameraPositionState
 import com.yolojj333.heythere.models.LocationData
 import com.yolojj333.heythere.models.User
@@ -79,7 +83,6 @@ fun MainAppScaffold(onSignOut: () -> Unit) {
     var currentUser by remember { mutableStateOf(User()) }
     var isProfileLoaded by remember { mutableStateOf(false) }
 
-    // NEW: State to hold all the real users fetched from Firestore
     var allCloudUsers by remember { mutableStateOf<List<User>>(emptyList()) }
 
     LaunchedEffect(auth.currentUser?.uid) {
@@ -104,7 +107,6 @@ fun MainAppScaffold(onSignOut: () -> Unit) {
         }
     }
 
-    // NEW: Start listening to the live Firestore database for all users
     LaunchedEffect(Unit) {
         FirebaseManager.listenToAllUsers(
             onResult = { users -> allCloudUsers = users },
@@ -112,16 +114,23 @@ fun MainAppScaffold(onSignOut: () -> Unit) {
         )
     }
 
-    val defaultLocation = LatLng(34.0522, -118.2437)
-    val cameraPositionState = rememberCameraPositionState {
-        position = CameraPosition.fromLatLngZoom(defaultLocation, 12f)
-    }
-
     if (!isProfileLoaded) {
         Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
             CircularProgressIndicator()
         }
         return
+    }
+
+    // Dynamic initial location based on last known data
+    val defaultLat = currentUser.locationData.publicLatitude
+    val defaultLng = currentUser.locationData.publicLongitude
+    val defaultLocation = LatLng(defaultLat, defaultLng)
+
+    // Zoom out to see the globe if they are at 0,0, otherwise zoom in on their last known location
+    val initialZoom = if (defaultLat == 0.0 && defaultLng == 0.0) 2f else 12f
+
+    val cameraPositionState = rememberCameraPositionState {
+        position = CameraPosition.fromLatLngZoom(defaultLocation, initialZoom)
     }
 
     Scaffold(
@@ -191,22 +200,17 @@ fun LocationPermissionScreen(
     val permissionLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.RequestMultiplePermissions()
     ) { permissions ->
-        // We consider permission granted if they gave at least coarse location
         hasLocationPermission = permissions[Manifest.permission.ACCESS_COARSE_LOCATION] == true ||
                 permissions[Manifest.permission.ACCESS_FINE_LOCATION] == true
     }
 
-    // By passing the setting into LaunchedEffect, it will re-trigger the permission
-    // request if the user toggles the switch in their Settings tab.
     LaunchedEffect(currentUser.privacySettings.usePreciseLocation) {
         val permissionsToRequest = if (currentUser.privacySettings.usePreciseLocation) {
-            // Ask for both (required by Android 12+ to show the precise/approximate toggle)
             arrayOf(
                 Manifest.permission.ACCESS_FINE_LOCATION,
                 Manifest.permission.ACCESS_COARSE_LOCATION
             )
         } else {
-            // Only ask for approximate location
             arrayOf(
                 Manifest.permission.ACCESS_COARSE_LOCATION
             )
@@ -214,52 +218,80 @@ fun LocationPermissionScreen(
         permissionLauncher.launch(permissionsToRequest)
     }
 
-    if (hasLocationPermission) {
-        BeaconMapScreen(currentUser, cameraPositionState, allCloudUsers, onUserUpdate)
-    } else {
-        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-            Text(text = "Location permission is required to find nearby connections.")
-        }
-    }
+    // Always show the map, passing down whether they granted permission or not
+    BeaconMapScreen(
+        currentUser = currentUser,
+        cameraPositionState = cameraPositionState,
+        allCloudUsers = allCloudUsers,
+        hasLocationPermission = hasLocationPermission,
+        onUserUpdate = onUserUpdate
+    )
 }
 
-@SuppressLint("MissingPermission") // Suppressed because we already checked permissions in the parent screen
+@SuppressLint("MissingPermission")
 @Composable
 fun BeaconMapScreen(
     currentUser: User,
     cameraPositionState: CameraPositionState,
     allCloudUsers: List<User>,
+    hasLocationPermission: Boolean,
     onUserUpdate: (User) -> Unit
 ) {
     val context = LocalContext.current
     val fusedLocationClient = remember { LocationServices.getFusedLocationProviderClient(context) }
 
-    // Fetch actual GPS location when the map loads and upload it
-    LaunchedEffect(Unit) {
-        fusedLocationClient.lastLocation.addOnSuccessListener { location ->
-            if (location != null) {
-                val exactLatLng = LatLng(location.latitude, location.longitude)
-                val noiseLatLng = LocationUtils.applyLocationNoise(exactLatLng)
+    // We no longer need the 'myRealLocation' state variable because Google Maps
+    // handles the blue dot for us automatically now!
 
-                val newLocationData = LocationData(
-                    preciseLatitude = exactLatLng.latitude,
-                    preciseLongitude = exactLatLng.longitude,
-                    noiseLatitude = noiseLatLng.latitude,
-                    noiseLongitude = noiseLatLng.longitude,
-                    lastUpdatedTimestamp = System.currentTimeMillis()
-                )
+    DisposableEffect(currentUser.privacySettings.usePreciseLocation, hasLocationPermission) {
+        // Create the callback that will trigger every time the phone senses movement
+        val locationCallback = object : com.google.android.gms.location.LocationCallback() {
+            override fun onLocationResult(result: com.google.android.gms.location.LocationResult) {
+                result.lastLocation?.let { location ->
+                    val exactLatLng = LatLng(location.latitude, location.longitude)
+                    val noiseLatLng = LocationUtils.applyLocationNoise(exactLatLng)
 
-                val updatedUser = currentUser.copy(locationData = newLocationData)
-                onUserUpdate(updatedUser)
+                    val broadcastLat = if (currentUser.privacySettings.usePreciseLocation) exactLatLng.latitude else noiseLatLng.latitude
+                    val broadcastLng = if (currentUser.privacySettings.usePreciseLocation) exactLatLng.longitude else noiseLatLng.longitude
 
-                // Snap the map camera to the user's real location
-                cameraPositionState.position = CameraPosition.fromLatLngZoom(exactLatLng, 14f)
+                    // Only update Firebase if the coordinates actually changed to save bandwidth
+                    if (currentUser.locationData.publicLatitude != broadcastLat || currentUser.locationData.publicLongitude != broadcastLng) {
+                        val newLocationData = LocationData(
+                            publicLatitude = broadcastLat,
+                            publicLongitude = broadcastLng,
+                            lastUpdatedTimestamp = System.currentTimeMillis()
+                        )
+
+                        val updatedUser = currentUser.copy(locationData = newLocationData)
+                        onUserUpdate(updatedUser)
+                    }
+                }
             }
+        }
+
+        if (hasLocationPermission) {
+            // Request high accuracy updates roughly every 5 seconds
+            val locationRequest = com.google.android.gms.location.LocationRequest.Builder(
+                com.google.android.gms.location.Priority.PRIORITY_HIGH_ACCURACY,
+                5000L
+            ).build()
+
+            fusedLocationClient.requestLocationUpdates(
+                locationRequest,
+                locationCallback,
+                android.os.Looper.getMainLooper()
+            )
+        }
+
+        // Cleanup: Stop tracking when the user leaves the map screen
+        onDispose {
+            fusedLocationClient.removeLocationUpdates(locationCallback)
         }
     }
 
+    // Turn Google's native blue dot back on!
     val mapProperties = MapProperties(
-        isMyLocationEnabled = currentUser.privacySettings.isGlobalLocationOn
+        isMyLocationEnabled = hasLocationPermission
     )
 
     val uiSettings = MapUiSettings(
@@ -267,17 +299,17 @@ fun BeaconMapScreen(
         zoomControlsEnabled = false
     )
 
-    // Filter cloud users (exclude ourselves, and apply tag logic)
-    val filteredUsers = remember(currentUser.subscribedTags, allCloudUsers) {
-        // Step 1: Remove ourselves from the map
-        val otherUsers = allCloudUsers.filter { it.userId != currentUser.userId && it.privacySettings.isGlobalLocationOn }
-
-        // Step 2: Filter by shared tags
-        if (currentUser.subscribedTags.isEmpty()) {
-            otherUsers
+    val filteredUsers = remember(currentUser.subscribedTags, allCloudUsers, currentUser.privacySettings.isGlobalLocationOn, hasLocationPermission) {
+        if (!hasLocationPermission || !currentUser.privacySettings.isGlobalLocationOn) {
+            emptyList()
         } else {
-            otherUsers.filter { cloudUser ->
-                cloudUser.subscribedTags.any { tag -> currentUser.subscribedTags.contains(tag) }
+            val otherUsers = allCloudUsers.filter { it.userId != currentUser.userId && it.privacySettings.isGlobalLocationOn }
+            if (currentUser.subscribedTags.isEmpty()) {
+                otherUsers
+            } else {
+                otherUsers.filter { cloudUser ->
+                    cloudUser.subscribedTags.any { tag -> currentUser.subscribedTags.contains(tag) }
+                }
             }
         }
     }
@@ -288,22 +320,31 @@ fun BeaconMapScreen(
         properties = mapProperties,
         uiSettings = uiSettings
     ) {
+        // Draw OTHER users
         filteredUsers.forEach { user ->
-            val displayLat = if (user.privacySettings.usePreciseLocation) user.locationData.preciseLatitude else user.locationData.noiseLatitude
-            val displayLng = if (user.privacySettings.usePreciseLocation) user.locationData.preciseLongitude else user.locationData.noiseLongitude
-
-            // Only draw a pin if they actually have a valid location
-            if (displayLat != 0.0 && displayLng != 0.0) {
-                val position = LatLng(displayLat, displayLng)
+            if (user.locationData.publicLatitude != 0.0 && user.locationData.publicLongitude != 0.0) {
+                val position = LatLng(user.locationData.publicLatitude, user.locationData.publicLongitude)
                 val tagsString = user.subscribedTags.joinToString(", ")
-                val locationType = if (user.privacySettings.usePreciseLocation) "(Precise)" else "(Approximate)"
 
-                com.google.maps.android.compose.Marker(
-                    state = com.google.maps.android.compose.MarkerState(position = position),
-                    title = "${user.displayName} $locationType",
+                Marker(
+                    state = MarkerState(position = position),
+                    title = user.displayName,
                     snippet = "Likes: $tagsString"
                 )
             }
+        }
+
+        // Draw YOUR Broadcast Location (Orange Marker)
+        // You will now see this pin move separately from your blue dot if approximate location is on!
+        if (currentUser.privacySettings.isGlobalLocationOn && currentUser.locationData.publicLatitude != 0.0 && currentUser.locationData.publicLongitude != 0.0) {
+            Marker(
+                state = MarkerState(
+                    position = LatLng(currentUser.locationData.publicLatitude, currentUser.locationData.publicLongitude)
+                ),
+                title = "You (Broadcasted)",
+                snippet = "This is where others see you",
+                icon = BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_ORANGE)
+            )
         }
     }
 }

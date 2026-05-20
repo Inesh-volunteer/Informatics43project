@@ -2,6 +2,7 @@ package com.yolojj333.heythere.ui
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
@@ -11,6 +12,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.yolojj333.heythere.models.PrivacySettings
@@ -20,9 +22,10 @@ import com.yolojj333.heythere.models.PrivacySettings
 fun SettingsScreen(
     privacySettings: PrivacySettings,
     onSettingsChange: (PrivacySettings) -> Unit,
-    onSignOut: () -> Unit // <-- NEW LOGOUT PARAMETER
+    onSignOut: () -> Unit
 ) {
     var zoneInput by remember { mutableStateOf("") }
+    var intervalInput by remember { mutableStateOf(privacySettings.backgroundUpdateIntervalSeconds.toString()) }
 
     Column(
         modifier = Modifier
@@ -58,6 +61,35 @@ fun SettingsScreen(
             isChecked = privacySettings.usePreciseLocation,
             onCheckedChange = { onSettingsChange(privacySettings.copy(usePreciseLocation = it)) }
         )
+
+        Divider(modifier = Modifier.padding(vertical = 16.dp))
+
+        Text(text = "Background Updates", fontSize = 20.sp, fontWeight = FontWeight.SemiBold, color = MaterialTheme.colorScheme.primary)
+        Spacer(modifier = Modifier.height(8.dp))
+
+        SettingToggleRow(
+            title = "Run in Background",
+            description = "Allow the app to update your location while minimized.",
+            isChecked = privacySettings.isBackgroundLocationEnabled,
+            onCheckedChange = { onSettingsChange(privacySettings.copy(isBackgroundLocationEnabled = it)) }
+        )
+
+        if (privacySettings.isBackgroundLocationEnabled) {
+            OutlinedTextField(
+                value = intervalInput,
+                onValueChange = { newValue ->
+                    intervalInput = newValue
+                    val parsed = newValue.toIntOrNull()
+                    if (parsed != null && parsed > 0) {
+                        onSettingsChange(privacySettings.copy(backgroundUpdateIntervalSeconds = parsed))
+                    }
+                },
+                label = { Text("Update Interval (Seconds)") },
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
+                singleLine = true
+            )
+        }
 
         Divider(modifier = Modifier.padding(vertical = 16.dp))
 
@@ -123,7 +155,6 @@ fun SettingsScreen(
             )
         }
 
-        // NEW LOGOUT BUTTON
         Divider(modifier = Modifier.padding(vertical = 16.dp))
         Button(
             onClick = onSignOut,

@@ -27,11 +27,10 @@ object MockDataGenerator {
             val isPrecise = Random.nextBoolean()
             val noiseLocation = LocationUtils.applyLocationNoise(exactLocation)
 
+            // SECURE LOGIC: Only assign the final public coordinates based on their preference
             val locationData = LocationData(
-                preciseLatitude = exactLocation.latitude,
-                preciseLongitude = exactLocation.longitude,
-                noiseLatitude = noiseLocation.latitude,
-                noiseLongitude = noiseLocation.longitude
+                publicLatitude = if (isPrecise) exactLocation.latitude else noiseLocation.latitude,
+                publicLongitude = if (isPrecise) exactLocation.longitude else noiseLocation.longitude
             )
 
             // Pick 1 to 3 random tags for this user

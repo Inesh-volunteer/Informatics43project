@@ -17,12 +17,11 @@ data class User(
 
 /**
  * Holds the user's geographic state.
+ * CRITICAL FIX: Only store the PUBLIC coordinates here. Never upload hidden precise data.
  */
 data class LocationData(
-    var preciseLatitude: Double = 0.0,
-    var preciseLongitude: Double = 0.0,
-    var noiseLatitude: Double = 0.0,
-    var noiseLongitude: Double = 0.0,
+    var publicLatitude: Double = 0.0,
+    var publicLongitude: Double = 0.0,
     var lastUpdatedTimestamp: Long = 0L
 )
 
@@ -32,5 +31,7 @@ data class LocationData(
 data class PrivacySettings(
     var isGlobalLocationOn: Boolean = true,
     var usePreciseLocation: Boolean = false,
-    var activeBlackoutZones: List<String> = emptyList()
+    var activeBlackoutZones: List<String> = emptyList(),
+    var isBackgroundLocationEnabled: Boolean = false,
+    var backgroundUpdateIntervalSeconds: Int = 60
 )
