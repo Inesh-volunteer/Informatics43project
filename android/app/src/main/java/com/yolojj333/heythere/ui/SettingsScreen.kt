@@ -1,21 +1,28 @@
 package com.yolojj333.heythere.ui
 
+import android.location.Geocoder
+import android.widget.Toast
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.yolojj333.heythere.models.BlackoutZone
 import com.yolojj333.heythere.models.PrivacySettings
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import kotlin.math.roundToInt
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -25,7 +32,13 @@ fun SettingsScreen(
     onSignOut: () -> Unit
 ) {
     var zoneInput by remember { mutableStateOf("") }
+    // NEW: State for the radius slider
+    var radiusInput by remember { mutableFloatStateOf(200f) }
     var intervalInput by remember { mutableStateOf(privacySettings.backgroundUpdateIntervalSeconds.toString()) }
+
+    val context = LocalContext.current
+    val coroutineScope = rememberCoroutineScope()
+    var isGeocoding by remember { mutableStateOf(false) }
 
     Column(
         modifier = Modifier
@@ -95,21 +108,25 @@ fun SettingsScreen(
 
         Text(text = "Blackout Zones", fontSize = 20.sp, fontWeight = FontWeight.SemiBold, color = MaterialTheme.colorScheme.primary)
         Text(
-            text = "Your location will turn off automatically when entering these zones (Max 3).",
+            text = "Your location will turn off automatically when entering these custom zones (Max 3).",
             fontSize = 14.sp,
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
         Spacer(modifier = Modifier.height(16.dp))
 
+        // Display Active Zones with their specific radius
         privacySettings.activeBlackoutZones.forEach { zone ->
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(vertical = 4.dp),
+                    .padding(vertical = 8.dp),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Text(text = zone, fontSize = 16.sp)
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(text = zone.name, fontSize = 16.sp, fontWeight = FontWeight.Medium)
+                    Text(text = "Radius: ${zone.radiusMeters.roundToInt()} meters", fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
                 IconButton(onClick = {
                     val newZones = privacySettings.activeBlackoutZones.toMutableList()
                     newZones.remove(zone)
@@ -121,37 +138,88 @@ fun SettingsScreen(
         }
 
         if (privacySettings.activeBlackoutZones.size < 3) {
-            Row(
+            Spacer(modifier = Modifier.height(8.dp))
+            // NEW: A Card layout to hold the address and radius inputs cleanly
+            Card(
                 modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
             ) {
-                OutlinedTextField(
-                    value = zoneInput,
-                    onValueChange = { zoneInput = it },
-                    label = { Text("Enter Address or Name") },
-                    modifier = Modifier.weight(1f),
-                    singleLine = true
-                )
-                Spacer(modifier = Modifier.width(8.dp))
-                IconButton(
-                    onClick = {
-                        if (zoneInput.isNotBlank()) {
-                            val newZones = privacySettings.activeBlackoutZones.toMutableList()
-                            newZones.add(zoneInput.trim())
-                            onSettingsChange(privacySettings.copy(activeBlackoutZones = newZones))
-                            zoneInput = ""
+                Column(modifier = Modifier.padding(16.dp)) {
+                    OutlinedTextField(
+                        value = zoneInput,
+                        onValueChange = { zoneInput = it },
+                        label = { Text(if (isGeocoding) "Locating..." else "Enter Address or Name") },
+                        modifier = Modifier.fillMaxWidth(),
+                        singleLine = true,
+                        enabled = !isGeocoding
+                    )
+
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    Text(text = "Radius: ${radiusInput.roundToInt()} meters", fontSize = 14.sp, fontWeight = FontWeight.Medium)
+                    Slider(
+                        value = radiusInput,
+                        onValueChange = { radiusInput = it },
+                        valueRange = 50f..2000f, // 50m to 2km
+                        enabled = !isGeocoding
+                    )
+
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    Button(
+                        onClick = {
+                            if (zoneInput.isNotBlank() && !isGeocoding) {
+                                isGeocoding = true
+                                coroutineScope.launch(Dispatchers.IO) {
+                                    try {
+                                        val geocoder = Geocoder(context)
+                                        @Suppress("DEPRECATION")
+                                        val addresses = geocoder.getFromLocationName(zoneInput.trim(), 1)
+
+                                        withContext(Dispatchers.Main) {
+                                            isGeocoding = false
+                                            if (!addresses.isNullOrEmpty()) {
+                                                val location = addresses[0]
+                                                val newZone = BlackoutZone(
+                                                    name = zoneInput.trim(),
+                                                    latitude = location.latitude,
+                                                    longitude = location.longitude,
+                                                    radiusMeters = radiusInput.toDouble() // Inject the slider value here!
+                                                )
+                                                val newZones = privacySettings.activeBlackoutZones.toMutableList()
+                                                newZones.add(newZone)
+                                                onSettingsChange(privacySettings.copy(activeBlackoutZones = newZones))
+                                                zoneInput = ""
+                                                radiusInput = 200f // Reset slider
+                                            } else {
+                                                Toast.makeText(context, "Address not found. Be more specific.", Toast.LENGTH_SHORT).show()
+                                            }
+                                        }
+                                    } catch (e: Exception) {
+                                        withContext(Dispatchers.Main) {
+                                            isGeocoding = false
+                                            Toast.makeText(context, "Network error finding address.", Toast.LENGTH_SHORT).show()
+                                        }
+                                    }
+                                }
+                            }
+                        },
+                        modifier = Modifier.fillMaxWidth(),
+                        enabled = !isGeocoding && zoneInput.isNotBlank()
+                    ) {
+                        if (isGeocoding) {
+                            CircularProgressIndicator(modifier = Modifier.size(24.dp), color = MaterialTheme.colorScheme.onPrimary)
+                        } else {
+                            Text("Add Blackout Zone")
                         }
-                    },
-                    modifier = Modifier.padding(top = 8.dp)
-                ) {
-                    Icon(Icons.Filled.Add, contentDescription = "Add Zone", tint = MaterialTheme.colorScheme.primary)
+                    }
                 }
             }
         } else {
             Text(
                 text = "Maximum of 3 blackout zones reached.",
                 color = MaterialTheme.colorScheme.error,
-                modifier = Modifier.padding(top = 8.dp)
+                modifier = Modifier.padding(top = 16.dp)
             )
         }
 

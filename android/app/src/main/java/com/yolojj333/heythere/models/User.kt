@@ -17,7 +17,6 @@ data class User(
 
 /**
  * Holds the user's geographic state.
- * CRITICAL FIX: Only store the PUBLIC coordinates here. Never upload hidden precise data.
  */
 data class LocationData(
     var publicLatitude: Double = 0.0,
@@ -26,12 +25,22 @@ data class LocationData(
 )
 
 /**
+ * Represents a specific geographic area where the user's location is hidden.
+ */
+data class BlackoutZone(
+    var name: String = "",
+    var latitude: Double = 0.0,
+    var longitude: Double = 0.0,
+    var radiusMeters: Double = 200.0 // Default 200m radius
+)
+
+/**
  * Manages the user's privacy toggles.
  */
 data class PrivacySettings(
     var isGlobalLocationOn: Boolean = true,
     var usePreciseLocation: Boolean = false,
-    var activeBlackoutZones: List<String> = emptyList(),
     var isBackgroundLocationEnabled: Boolean = false,
-    var backgroundUpdateIntervalSeconds: Int = 60
+    var backgroundUpdateIntervalSeconds: Int = 60,
+    var activeBlackoutZones: List<BlackoutZone> = emptyList() // Changed from List<String>
 )

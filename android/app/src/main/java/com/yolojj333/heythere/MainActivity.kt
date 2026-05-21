@@ -2,44 +2,47 @@ package com.yolojj333.heythere
 
 import android.Manifest
 import android.annotation.SuppressLint
+import android.content.Context
 import android.os.Bundle
 import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccountCircle
+import androidx.compose.material.icons.filled.Layers
+import androidx.compose.material.icons.filled.Message
 import androidx.compose.material.icons.filled.Place
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.google.android.gms.location.LocationServices
 import com.google.android.gms.maps.model.BitmapDescriptorFactory
 import com.google.android.gms.maps.model.CameraPosition
 import com.google.android.gms.maps.model.LatLng
 import com.google.firebase.auth.FirebaseAuth
-import com.google.maps.android.compose.CameraPositionState
-import com.google.maps.android.compose.GoogleMap
-import com.google.maps.android.compose.MapProperties
-import com.google.maps.android.compose.MapUiSettings
-import com.google.maps.android.compose.Marker
-import com.google.maps.android.compose.MarkerState
-import com.google.maps.android.compose.rememberCameraPositionState
+import com.google.maps.android.compose.*
 import com.yolojj333.heythere.models.LocationData
 import com.yolojj333.heythere.models.User
 import com.yolojj333.heythere.ui.AuthScreen
+import com.yolojj333.heythere.ui.MessagesScreen
 import com.yolojj333.heythere.ui.ProfileScreen
 import com.yolojj333.heythere.ui.SettingsScreen
 import com.yolojj333.heythere.ui.theme.BeaconTheme
 import com.yolojj333.heythere.utils.FirebaseManager
 import com.yolojj333.heythere.utils.LocationUtils
+import java.util.concurrent.TimeUnit
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -78,11 +81,11 @@ fun BeaconAppRoot() {
 fun MainAppScaffold(onSignOut: () -> Unit) {
     val context = LocalContext.current
     val auth = FirebaseAuth.getInstance()
+    val sharedPreferences = remember { context.getSharedPreferences("HeyTherePrefs", Context.MODE_PRIVATE) }
 
     var currentRoute by remember { mutableStateOf("map") }
     var currentUser by remember { mutableStateOf(User()) }
     var isProfileLoaded by remember { mutableStateOf(false) }
-
     var allCloudUsers by remember { mutableStateOf<List<User>>(emptyList()) }
 
     LaunchedEffect(auth.currentUser?.uid) {
@@ -121,13 +124,14 @@ fun MainAppScaffold(onSignOut: () -> Unit) {
         return
     }
 
-    // Dynamic initial location based on last known data
-    val defaultLat = currentUser.locationData.publicLatitude
-    val defaultLng = currentUser.locationData.publicLongitude
-    val defaultLocation = LatLng(defaultLat, defaultLng)
+    val savedLat = sharedPreferences.getFloat("last_lat", 0f).toDouble()
+    val savedLng = sharedPreferences.getFloat("last_lng", 0f).toDouble()
 
-    // Zoom out to see the globe if they are at 0,0, otherwise zoom in on their last known location
-    val initialZoom = if (defaultLat == 0.0 && defaultLng == 0.0) 2f else 12f
+    val defaultLat = if (savedLat != 0.0) savedLat else currentUser.locationData.publicLatitude
+    val defaultLng = if (savedLng != 0.0) savedLng else currentUser.locationData.publicLongitude
+
+    val defaultLocation = LatLng(defaultLat, defaultLng)
+    val initialZoom = if (defaultLat == 0.0 && defaultLng == 0.0) 2f else 14f
 
     val cameraPositionState = rememberCameraPositionState {
         position = CameraPosition.fromLatLngZoom(defaultLocation, initialZoom)
@@ -141,6 +145,13 @@ fun MainAppScaffold(onSignOut: () -> Unit) {
                     label = { Text("Map") },
                     selected = currentRoute == "map",
                     onClick = { currentRoute = "map" }
+                )
+                // NEW: Messages Tab (2nd Position)
+                NavigationBarItem(
+                    icon = { Icon(Icons.Filled.Message, contentDescription = "Messages") },
+                    label = { Text("Messages") },
+                    selected = currentRoute == "messages",
+                    onClick = { currentRoute = "messages" }
                 )
                 NavigationBarItem(
                     icon = { Icon(Icons.Filled.AccountCircle, contentDescription = "Profile") },
@@ -168,6 +179,8 @@ fun MainAppScaffold(onSignOut: () -> Unit) {
                         FirebaseManager.saveUserProfile(updatedUser, {}, {})
                     }
                 )
+
+                "messages" -> MessagesScreen() // NEW: Routes to placeholder
 
                 "profile" -> ProfileScreen(
                     user = currentUser,
@@ -218,7 +231,6 @@ fun LocationPermissionScreen(
         permissionLauncher.launch(permissionsToRequest)
     }
 
-    // Always show the map, passing down whether they granted permission or not
     BeaconMapScreen(
         currentUser = currentUser,
         cameraPositionState = cameraPositionState,
@@ -239,11 +251,11 @@ fun BeaconMapScreen(
 ) {
     val context = LocalContext.current
     val fusedLocationClient = remember { LocationServices.getFusedLocationProviderClient(context) }
+    val sharedPreferences = remember { context.getSharedPreferences("HeyTherePrefs", Context.MODE_PRIVATE) }
 
-    var myRealLocation by remember { mutableStateOf<LatLng?>(null) }
-
-    // NEW: A ticking clock that forces the map to refresh every 60 seconds
+    var currentMapType by remember { mutableStateOf(MapType.NORMAL) }
     var currentTick by remember { mutableStateOf(System.currentTimeMillis()) }
+
     LaunchedEffect(Unit) {
         while (true) {
             kotlinx.coroutines.delay(60_000L)
@@ -251,56 +263,98 @@ fun BeaconMapScreen(
         }
     }
 
-    LaunchedEffect(currentUser.privacySettings.usePreciseLocation, hasLocationPermission) {
-        if (hasLocationPermission) {
-            fusedLocationClient.lastLocation.addOnSuccessListener { location ->
-                if (location != null) {
+    DisposableEffect(currentUser.privacySettings.usePreciseLocation, hasLocationPermission, currentUser.privacySettings.activeBlackoutZones) {
+        val locationCallback = object : com.google.android.gms.location.LocationCallback() {
+            override fun onLocationResult(result: com.google.android.gms.location.LocationResult) {
+                result.lastLocation?.let { location ->
                     val exactLatLng = LatLng(location.latitude, location.longitude)
-                    myRealLocation = exactLatLng
 
-                    val noiseLatLng = LocationUtils.applyLocationNoise(exactLatLng)
+                    sharedPreferences.edit()
+                        .putFloat("last_lat", exactLatLng.latitude.toFloat())
+                        .putFloat("last_lng", exactLatLng.longitude.toFloat())
+                        .apply()
 
-                    val broadcastLat = if (currentUser.privacySettings.usePreciseLocation) exactLatLng.latitude else noiseLatLng.latitude
-                    val broadcastLng = if (currentUser.privacySettings.usePreciseLocation) exactLatLng.longitude else noiseLatLng.longitude
+                    var isInsideBlackoutZone = false
+                    for (zone in currentUser.privacySettings.activeBlackoutZones) {
+                        val results = FloatArray(1)
+                        android.location.Location.distanceBetween(
+                            exactLatLng.latitude, exactLatLng.longitude,
+                            zone.latitude, zone.longitude,
+                            results
+                        )
+                        if (results[0] <= zone.radiusMeters) {
+                            isInsideBlackoutZone = true
+                            break
+                        }
+                    }
 
-                    val newLocationData = LocationData(
-                        publicLatitude = broadcastLat,
-                        publicLongitude = broadcastLng,
-                        lastUpdatedTimestamp = System.currentTimeMillis()
-                    )
+                    val broadcastLat: Double
+                    val broadcastLng: Double
 
-                    val updatedUser = currentUser.copy(locationData = newLocationData)
-                    onUserUpdate(updatedUser)
+                    if (isInsideBlackoutZone) {
+                        broadcastLat = 0.0
+                        broadcastLng = 0.0
+                    } else {
+                        val noiseLatLng = LocationUtils.applyLocationNoise(context, exactLatLng)
+                        broadcastLat = if (currentUser.privacySettings.usePreciseLocation) exactLatLng.latitude else noiseLatLng.latitude
+                        broadcastLng = if (currentUser.privacySettings.usePreciseLocation) exactLatLng.longitude else noiseLatLng.longitude
+                    }
 
-                    cameraPositionState.position = CameraPosition.fromLatLngZoom(exactLatLng, 14f)
+                    if (currentUser.locationData.publicLatitude != broadcastLat || currentUser.locationData.publicLongitude != broadcastLng) {
+                        val newLocationData = LocationData(
+                            publicLatitude = broadcastLat,
+                            publicLongitude = broadcastLng,
+                            lastUpdatedTimestamp = System.currentTimeMillis()
+                        )
+
+                        val updatedUser = currentUser.copy(locationData = newLocationData)
+                        onUserUpdate(updatedUser)
+                    }
                 }
             }
+        }
+
+        if (hasLocationPermission) {
+            val locationRequest = com.google.android.gms.location.LocationRequest.Builder(
+                com.google.android.gms.location.Priority.PRIORITY_HIGH_ACCURACY,
+                5000L
+            ).build()
+
+            fusedLocationClient.requestLocationUpdates(
+                locationRequest,
+                locationCallback,
+                android.os.Looper.getMainLooper()
+            )
+        }
+
+        onDispose {
+            fusedLocationClient.removeLocationUpdates(locationCallback)
         }
     }
 
     val mapProperties = MapProperties(
-        isMyLocationEnabled = false
+        isMyLocationEnabled = hasLocationPermission,
+        mapType = currentMapType
     )
 
     val uiSettings = MapUiSettings(
         myLocationButtonEnabled = true,
-        zoomControlsEnabled = false
+        zoomControlsEnabled = false,
+        mapToolbarEnabled = true
     )
 
-    // THE RULE: Filter out users without permissions, without shared tags, AND who have been offline for >10 minutes.
     val filteredUsers = remember(
         currentUser.subscribedTags,
         allCloudUsers,
         currentUser.privacySettings.isGlobalLocationOn,
         hasLocationPermission,
-        currentTick // Passing the tick here forces this block to re-run every minute
+        currentTick
     ) {
         if (!hasLocationPermission || !currentUser.privacySettings.isGlobalLocationOn) {
             emptyList()
         } else {
             val tenMinutesInMillis = 10 * 60 * 1000L
 
-            // Filter out ourselves, hidden users, AND stale locations
             val activeUsers = allCloudUsers.filter {
                 it.userId != currentUser.userId &&
                         it.privacySettings.isGlobalLocationOn &&
@@ -317,46 +371,90 @@ fun BeaconMapScreen(
         }
     }
 
-    GoogleMap(
-        modifier = Modifier.fillMaxSize(),
-        cameraPositionState = cameraPositionState,
-        properties = mapProperties,
-        uiSettings = uiSettings
-    ) {
-        filteredUsers.forEach { user ->
-            if (user.locationData.publicLatitude != 0.0 && user.locationData.publicLongitude != 0.0) {
-                val position = LatLng(user.locationData.publicLatitude, user.locationData.publicLongitude)
-                val tagsString = user.subscribedTags.joinToString(", ")
+    Box(modifier = Modifier.fillMaxSize()) {
+        GoogleMap(
+            modifier = Modifier.fillMaxSize(),
+            cameraPositionState = cameraPositionState,
+            properties = mapProperties,
+            uiSettings = uiSettings
+        ) {
+            filteredUsers.forEach { user ->
+                if (user.locationData.publicLatitude != 0.0 && user.locationData.publicLongitude != 0.0) {
+                    val position = LatLng(user.locationData.publicLatitude, user.locationData.publicLongitude)
 
+                    MarkerInfoWindowContent(
+                        state = MarkerState(position = position)
+                    ) {
+                        val sharedTags = user.subscribedTags.intersect(currentUser.subscribedTags.toSet()).take(3)
+                        val tagsText = if (sharedTags.isNotEmpty()) {
+                            sharedTags.joinToString(", ")
+                        } else {
+                            "No shared interests"
+                        }
+
+                        val diffMs = System.currentTimeMillis() - user.locationData.lastUpdatedTimestamp
+                        val diffMins = java.util.concurrent.TimeUnit.MILLISECONDS.toMinutes(diffMs)
+                        val timeString = if (diffMins < 1) "Just now" else "$diffMins mins ago"
+
+                        Row(
+                            modifier = Modifier.padding(8.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Box(
+                                modifier = Modifier
+                                    .size(48.dp)
+                                    .clip(CircleShape)
+                                    .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.1f)),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Filled.AccountCircle,
+                                    contentDescription = "Profile",
+                                    tint = MaterialTheme.colorScheme.primary,
+                                    modifier = Modifier.size(32.dp)
+                                )
+                            }
+
+                            Spacer(modifier = Modifier.width(12.dp))
+
+                            Column {
+                                // Hardcoding colors to ensure visibility against the forced white background
+                                Text(text = user.displayName, fontWeight = FontWeight.Bold, fontSize = 16.sp, color = androidx.compose.ui.graphics.Color.Black)
+                                Text(text = tagsText, fontSize = 14.sp, color = androidx.compose.ui.graphics.Color.Black)
+                                Spacer(modifier = Modifier.height(2.dp))
+                                Text(text = timeString, fontSize = 12.sp, color = androidx.compose.ui.graphics.Color.Gray)
+                            }
+                        }
+                    }
+                }
+            }
+
+            if (currentUser.privacySettings.isGlobalLocationOn &&
+                !currentUser.privacySettings.usePreciseLocation &&
+                currentUser.locationData.publicLatitude != 0.0 &&
+                currentUser.locationData.publicLongitude != 0.0) {
                 Marker(
-                    state = MarkerState(position = position),
-                    title = user.displayName,
-                    snippet = "Likes: $tagsString"
+                    state = MarkerState(
+                        position = LatLng(currentUser.locationData.publicLatitude, currentUser.locationData.publicLongitude)
+                    ),
+                    title = "You (Broadcasted)",
+                    snippet = "This is where others see you",
+                    icon = BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_ORANGE)
                 )
             }
         }
 
-        if (currentUser.privacySettings.isGlobalLocationOn &&
-            !currentUser.privacySettings.usePreciseLocation &&
-            currentUser.locationData.publicLatitude != 0.0 &&
-            currentUser.locationData.publicLongitude != 0.0) {
-            Marker(
-                state = MarkerState(
-                    position = LatLng(currentUser.locationData.publicLatitude, currentUser.locationData.publicLongitude)
-                ),
-                title = "You (Broadcasted)",
-                snippet = "This is where others see you",
-                icon = BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_ORANGE)
-            )
-        }
-
-        myRealLocation?.let { realLatLng ->
-            Marker(
-                state = MarkerState(position = realLatLng),
-                title = "You (Actual Device)",
-                snippet = "Your true GPS location",
-                icon = BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_AZURE)
-            )
+        FloatingActionButton(
+            onClick = {
+                currentMapType = if (currentMapType == MapType.NORMAL) MapType.HYBRID else MapType.NORMAL
+            },
+            modifier = Modifier
+                .align(Alignment.TopStart)
+                .padding(16.dp),
+            containerColor = MaterialTheme.colorScheme.surface,
+            contentColor = MaterialTheme.colorScheme.primary
+        ) {
+            Icon(Icons.Filled.Layers, contentDescription = "Toggle Map Type")
         }
     }
 }
