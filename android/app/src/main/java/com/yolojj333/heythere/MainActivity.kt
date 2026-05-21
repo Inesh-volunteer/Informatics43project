@@ -184,7 +184,6 @@ fun MainAppScaffold(onSignOut: () -> Unit) {
                 "messages" -> MessagesScreen()
 
                 "profile" -> {
-                    // Show a loading overlay if we are uploading a massive image
                     if (isSavingProfile) {
                         Box(modifier = Modifier.fillMaxSize().padding(bottom = 50.dp), contentAlignment = Alignment.Center) {
                             CircularProgressIndicator()
@@ -200,18 +199,30 @@ fun MainAppScaffold(onSignOut: () -> Unit) {
 
                             val imageUrl = currentUser.profileImageUrls.firstOrNull()
 
-                            // Check if the image string is a local device URI that needs uploading
                             if (imageUrl != null && imageUrl.startsWith("content://")) {
-                                Toast.makeText(context, "Uploading image...", Toast.LENGTH_SHORT).show()
                                 val uri = android.net.Uri.parse(imageUrl)
+
+                                // LOCAL FILE SIZE CHECK
+                                val fileSize = try {
+                                    context.contentResolver.openAssetFileDescriptor(uri, "r")?.length ?: 0L
+                                } catch (e: Exception) {
+                                    0L
+                                }
+
+                                // 5MB = 5 * 1024 * 1024 bytes
+                                if (fileSize > 5242880L) {
+                                    isSavingProfile = false
+                                    Toast.makeText(context, "Image is too large. Limit is 5MB.", Toast.LENGTH_LONG).show()
+                                    return@ProfileScreen
+                                }
+
+                                Toast.makeText(context, "Uploading image...", Toast.LENGTH_SHORT).show()
 
                                 FirebaseManager.uploadProfileImage(
                                     uri = uri,
-                                    onSuccess = { publicDownloadUrl ->
-                                        // Image uploaded successfully. Inject the public URL into the user object.
+                                    onSuccess = { publicDownloadUrl: String ->
                                         val finalUser = currentUser.copy(profileImageUrls = listOf(publicDownloadUrl))
 
-                                        // Now save the complete object to Firestore
                                         FirebaseManager.saveUserProfile(
                                             user = finalUser,
                                             onSuccess = {
@@ -225,13 +236,36 @@ fun MainAppScaffold(onSignOut: () -> Unit) {
                                             }
                                         )
                                     },
+                                    onFailure = { error: Exception ->
+                                        isSavingProfile = false
+                                        val errorMsg = error.message ?: "Image upload failed."
+                                        android.util.Log.e("UploadError", "Firebase Storage failed: $errorMsg")
+                                        Toast.makeText(context, errorMsg, Toast.LENGTH_LONG).show()
+                                    }
+                                )
+                            } else if (imageUrl.isNullOrEmpty()) {
+                                // User removed the photo. Delete it from cloud storage, then save profile.
+                                FirebaseManager.deleteProfileImage(
+                                    onSuccess = {
+                                        FirebaseManager.saveUserProfile(
+                                            user = currentUser,
+                                            onSuccess = {
+                                                isSavingProfile = false
+                                                Toast.makeText(context, "Profile Saved! Photo removed.", Toast.LENGTH_SHORT).show()
+                                            },
+                                            onFailure = {
+                                                isSavingProfile = false
+                                                Toast.makeText(context, "Failed to save profile.", Toast.LENGTH_SHORT).show()
+                                            }
+                                        )
+                                    },
                                     onFailure = {
                                         isSavingProfile = false
-                                        Toast.makeText(context, "Image upload failed.", Toast.LENGTH_SHORT).show()
+                                        Toast.makeText(context, "Failed to delete old photo.", Toast.LENGTH_SHORT).show()
                                     }
                                 )
                             } else {
-                                // The image is already a public URL (or empty), so we just save to Firestore directly
+                                // Image is an existing HTTPS URL, just save changes
                                 FirebaseManager.saveUserProfile(
                                     user = currentUser,
                                     onSuccess = {

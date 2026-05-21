@@ -5,6 +5,7 @@ import com.google.firebase.FirebaseApp
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.storage.FirebaseStorage
+import com.google.firebase.storage.StorageException
 import com.yolojj333.heythere.models.User
 
 object FirebaseManager {
@@ -80,22 +81,56 @@ object FirebaseManager {
         }
 
         val storage = FirebaseStorage.getInstance()
-        // We use the userId as the filename so it naturally overwrites their old picture
         val imageRef = storage.reference.child("profile_images/$userId.jpg")
 
         imageRef.putFile(uri)
             .addOnSuccessListener {
-                // The upload finished, now we must request the public URL
                 imageRef.downloadUrl
                     .addOnSuccessListener { downloadUri ->
                         onSuccess(downloadUri.toString())
                     }
                     .addOnFailureListener { e ->
-                        onFailure(e)
+                        onFailure(Exception("Failed to get download URL: ${e.message}"))
                     }
             }
             .addOnFailureListener { e ->
-                onFailure(e)
+                val errorMessage = if (e is StorageException) {
+                    when (e.errorCode) {
+                        StorageException.ERROR_NOT_AUTHORIZED -> "Permission denied. Ensure the file is an image and under 5MB."
+                        StorageException.ERROR_RETRY_LIMIT_EXCEEDED -> "Network timeout. Check your connection."
+                        else -> e.message ?: "Unknown storage error."
+                    }
+                } else {
+                    e.message ?: "Upload failed."
+                }
+                onFailure(Exception(errorMessage))
+            }
+    }
+
+    /**
+     * Deletes the user's profile image from Cloud Storage.
+     */
+    fun deleteProfileImage(onSuccess: () -> Unit, onFailure: (Exception) -> Unit) {
+        val auth = FirebaseAuth.getInstance()
+        val userId = auth.currentUser?.uid
+
+        if (userId == null) {
+            onFailure(Exception("User is not authenticated."))
+            return
+        }
+
+        val storage = FirebaseStorage.getInstance()
+        val imageRef = storage.reference.child("profile_images/$userId.jpg")
+
+        imageRef.delete()
+            .addOnSuccessListener { onSuccess() }
+            .addOnFailureListener { e ->
+                // If the object does not exist (Error 404), treat it as a success since the goal is already met
+                if (e is StorageException && e.errorCode == StorageException.ERROR_OBJECT_NOT_FOUND) {
+                    onSuccess()
+                } else {
+                    onFailure(e)
+                }
             }
     }
 }

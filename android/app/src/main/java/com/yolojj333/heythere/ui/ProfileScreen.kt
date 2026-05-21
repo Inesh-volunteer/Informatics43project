@@ -30,8 +30,10 @@ import kotlin.math.roundToInt
 fun ProfileScreen(
     user: User,
     onUserChange: (User) -> Unit,
-    onSaveProfile: () -> Unit // NEW: Parameter to handle the save action
+    onSaveProfile: () -> Unit
 ) {
+    var showRemoveDialog by remember { mutableStateOf(false) }
+
     val photoPickerLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.PickVisualMedia(),
         onResult = { uri: Uri? ->
@@ -94,7 +96,6 @@ fun ProfileScreen(
             }
         }
 
-        // ---> ADJUST THIS VALUE (e.g., 4.dp, 8.dp, 16.dp) TO MOVE THE CONTENT UP OR DOWN <---
         Spacer(modifier = Modifier.height(8.dp))
 
         OutlinedTextField(
@@ -107,7 +108,6 @@ fun ProfileScreen(
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        // BIO FIELD
         OutlinedTextField(
             value = user.bio,
             onValueChange = { onUserChange(user.copy(bio = it)) },
@@ -120,7 +120,6 @@ fun ProfileScreen(
 
         Spacer(modifier = Modifier.height(24.dp))
 
-        // AGE SLIDER
         Text(text = "Age: ${user.age}", fontSize = 18.sp, fontWeight = FontWeight.Medium)
         Slider(
             value = user.age.toFloat(),
@@ -142,7 +141,6 @@ fun ProfileScreen(
 
         Spacer(modifier = Modifier.height(24.dp))
 
-        // INTERESTS
         Text(text = "Interests", fontSize = 20.sp, fontWeight = FontWeight.SemiBold, color = MaterialTheme.colorScheme.primary)
         Text(text = "Select tags that match your interests.", fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
 
@@ -172,15 +170,49 @@ fun ProfileScreen(
 
         Spacer(modifier = Modifier.height(32.dp))
 
-        // NEW: Save Profile Button
         Button(
             onClick = onSaveProfile,
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(bottom = 32.dp),
+            modifier = Modifier.fillMaxWidth(),
             colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
         ) {
             Text("Save Profile", fontSize = 16.sp, fontWeight = FontWeight.Bold)
         }
+
+        // ONLY render this button if they actually have a profile picture
+        if (user.profileImageUrls.isNotEmpty() && user.profileImageUrls.first().isNotBlank()) {
+            Spacer(modifier = Modifier.height(8.dp))
+            TextButton(
+                onClick = { showRemoveDialog = true },
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Text("Remove Profile Picture", color = MaterialTheme.colorScheme.error, fontSize = 16.sp, fontWeight = FontWeight.Bold)
+            }
+        }
+
+        Spacer(modifier = Modifier.height(32.dp))
+    }
+
+    // CONFIRMATION DIALOG
+    if (showRemoveDialog) {
+        AlertDialog(
+            onDismissRequest = { showRemoveDialog = false },
+            title = { Text("Remove Profile Picture?") },
+            text = { Text("Are you sure you want to remove your profile picture? You still need to click 'Save Profile' to apply this change.") },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        onUserChange(user.copy(profileImageUrls = emptyList()))
+                        showRemoveDialog = false
+                    }
+                ) {
+                    Text("Remove", color = MaterialTheme.colorScheme.error, fontWeight = FontWeight.Bold)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showRemoveDialog = false }) {
+                    Text("Cancel", color = MaterialTheme.colorScheme.onSurface)
+                }
+            }
+        )
     }
 }
