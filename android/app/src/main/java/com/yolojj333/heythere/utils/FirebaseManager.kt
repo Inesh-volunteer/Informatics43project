@@ -1,7 +1,10 @@
 package com.yolojj333.heythere.utils
 
+import android.net.Uri
 import com.google.firebase.FirebaseApp
+import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.storage.FirebaseStorage
 import com.yolojj333.heythere.models.User
 
 object FirebaseManager {
@@ -63,5 +66,36 @@ object FirebaseManager {
         } catch (e: Exception) {
             onFailure(e)
         }
+    }
+    /**
+     * Uploads a local image URI to Firebase Cloud Storage and returns the public download URL.
+     */
+    fun uploadProfileImage(uri: Uri, onSuccess: (String) -> Unit, onFailure: (Exception) -> Unit) {
+        val auth = FirebaseAuth.getInstance()
+        val userId = auth.currentUser?.uid
+
+        if (userId == null) {
+            onFailure(Exception("User is not authenticated."))
+            return
+        }
+
+        val storage = FirebaseStorage.getInstance()
+        // We use the userId as the filename so it naturally overwrites their old picture
+        val imageRef = storage.reference.child("profile_images/$userId.jpg")
+
+        imageRef.putFile(uri)
+            .addOnSuccessListener {
+                // The upload finished, now we must request the public URL
+                imageRef.downloadUrl
+                    .addOnSuccessListener { downloadUri ->
+                        onSuccess(downloadUri.toString())
+                    }
+                    .addOnFailureListener { e ->
+                        onFailure(e)
+                    }
+            }
+            .addOnFailureListener { e ->
+                onFailure(e)
+            }
     }
 }

@@ -88,6 +88,8 @@ fun MainAppScaffold(onSignOut: () -> Unit) {
     var isProfileLoaded by remember { mutableStateOf(false) }
     var allCloudUsers by remember { mutableStateOf<List<User>>(emptyList()) }
 
+    var isSavingProfile by remember { mutableStateOf(false) }
+
     LaunchedEffect(auth.currentUser?.uid) {
         val uid = auth.currentUser?.uid
         if (uid != null) {
@@ -146,7 +148,6 @@ fun MainAppScaffold(onSignOut: () -> Unit) {
                     selected = currentRoute == "map",
                     onClick = { currentRoute = "map" }
                 )
-                // NEW: Messages Tab (2nd Position)
                 NavigationBarItem(
                     icon = { Icon(Icons.Filled.Message, contentDescription = "Messages") },
                     label = { Text("Messages") },
@@ -180,12 +181,72 @@ fun MainAppScaffold(onSignOut: () -> Unit) {
                     }
                 )
 
-                "messages" -> MessagesScreen() // NEW: Routes to placeholder
+                "messages" -> MessagesScreen()
 
-                "profile" -> ProfileScreen(
-                    user = currentUser,
-                    onUserChange = { updatedUser -> currentUser = updatedUser }
-                )
+                "profile" -> {
+                    // Show a loading overlay if we are uploading a massive image
+                    if (isSavingProfile) {
+                        Box(modifier = Modifier.fillMaxSize().padding(bottom = 50.dp), contentAlignment = Alignment.Center) {
+                            CircularProgressIndicator()
+                        }
+                    }
+
+                    ProfileScreen(
+                        user = currentUser,
+                        onUserChange = { updatedUser -> currentUser = updatedUser },
+                        onSaveProfile = {
+                            if (isSavingProfile) return@ProfileScreen
+                            isSavingProfile = true
+
+                            val imageUrl = currentUser.profileImageUrls.firstOrNull()
+
+                            // Check if the image string is a local device URI that needs uploading
+                            if (imageUrl != null && imageUrl.startsWith("content://")) {
+                                Toast.makeText(context, "Uploading image...", Toast.LENGTH_SHORT).show()
+                                val uri = android.net.Uri.parse(imageUrl)
+
+                                FirebaseManager.uploadProfileImage(
+                                    uri = uri,
+                                    onSuccess = { publicDownloadUrl ->
+                                        // Image uploaded successfully. Inject the public URL into the user object.
+                                        val finalUser = currentUser.copy(profileImageUrls = listOf(publicDownloadUrl))
+
+                                        // Now save the complete object to Firestore
+                                        FirebaseManager.saveUserProfile(
+                                            user = finalUser,
+                                            onSuccess = {
+                                                currentUser = finalUser
+                                                isSavingProfile = false
+                                                Toast.makeText(context, "Profile Saved!", Toast.LENGTH_SHORT).show()
+                                            },
+                                            onFailure = {
+                                                isSavingProfile = false
+                                                Toast.makeText(context, "Failed to save profile.", Toast.LENGTH_SHORT).show()
+                                            }
+                                        )
+                                    },
+                                    onFailure = {
+                                        isSavingProfile = false
+                                        Toast.makeText(context, "Image upload failed.", Toast.LENGTH_SHORT).show()
+                                    }
+                                )
+                            } else {
+                                // The image is already a public URL (or empty), so we just save to Firestore directly
+                                FirebaseManager.saveUserProfile(
+                                    user = currentUser,
+                                    onSuccess = {
+                                        isSavingProfile = false
+                                        Toast.makeText(context, "Profile Saved!", Toast.LENGTH_SHORT).show()
+                                    },
+                                    onFailure = {
+                                        isSavingProfile = false
+                                        Toast.makeText(context, "Failed to save profile.", Toast.LENGTH_SHORT).show()
+                                    }
+                                )
+                            }
+                        }
+                    )
+                }
 
                 "settings" -> SettingsScreen(
                     privacySettings = currentUser.privacySettings,
