@@ -10,66 +10,61 @@ import com.yolojj333.heythere.models.User
 
 object FirebaseManager {
 
-    private val db get() = FirebaseFirestore.getInstance(FirebaseApp.getInstance(), "users")
-    private val usersCollection get() = db.collection("users")
+    // Helper to always get the explicitly named database
+    private fun getExplicitDatabase(): FirebaseFirestore {
+        return FirebaseFirestore.getInstance(FirebaseApp.getInstance(), "users")
+    }
 
+    /**
+     * Saves the entire User object to Firestore automatically.
+     */
     fun saveUserProfile(user: User, onSuccess: () -> Unit, onFailure: (Exception) -> Unit) {
-        if (user.userId.isBlank()) {
-            onFailure(Exception("User ID is missing! Try logging out and back in."))
-            return
-        }
+        val db = getExplicitDatabase()
 
-        try {
-            usersCollection.document(user.userId)
-                .set(user)
-                .addOnSuccessListener { onSuccess() }
-                .addOnFailureListener { exception -> onFailure(exception) }
-        } catch (e: Exception) {
-            onFailure(e)
-        }
+        db.collection("users").document(user.userId)
+            .set(user)
+            .addOnSuccessListener { onSuccess() }
+            .addOnFailureListener { onFailure(it) }
     }
 
+    /**
+     * Retrieves the User object from Firestore.
+     */
     fun getUserProfile(uid: String, onResult: (User?) -> Unit, onFailure: (Exception) -> Unit) {
-        if (uid.isBlank()) {
-            onFailure(Exception("UID is blank"))
-            return
-        }
+        val db = getExplicitDatabase()
 
-        try {
-            usersCollection.document(uid).get()
-                .addOnSuccessListener { document ->
-                    if (document != null && document.exists()) {
-                        val user = document.toObject(User::class.java)
-                        onResult(user)
-                    } else {
-                        onResult(null)
-                    }
-                }
-                .addOnFailureListener { exception -> onFailure(exception) }
-        } catch (e: Exception) {
-            onFailure(e)
-        }
-    }
-
-    // NEW: Real-time listener that automatically fetches all users and listens for changes
-    fun listenToAllUsers(onResult: (List<User>) -> Unit, onFailure: (Exception) -> Unit) {
-        try {
-            usersCollection.addSnapshotListener { snapshot, error ->
-                if (error != null) {
-                    onFailure(error)
-                    return@addSnapshotListener
-                }
-                if (snapshot != null) {
-                    val users = snapshot.documents.mapNotNull { it.toObject(User::class.java) }
-                    onResult(users)
+        db.collection("users").document(uid).get()
+            .addOnSuccessListener { document ->
+                if (document != null && document.exists()) {
+                    val user = document.toObject(User::class.java)
+                    onResult(user)
+                } else {
+                    onResult(null)
                 }
             }
-        } catch (e: Exception) {
-            onFailure(e)
+            .addOnFailureListener { onFailure(it) }
+    }
+
+    /**
+     * Listens to all active users for the map.
+     */
+    fun listenToAllUsers(onResult: (List<User>) -> Unit, onFailure: (Exception) -> Unit) {
+        val db = getExplicitDatabase()
+
+        db.collection("users").addSnapshotListener { snapshot, e ->
+            if (e != null) {
+                onFailure(e)
+                return@addSnapshotListener
+            }
+            if (snapshot != null) {
+                val users = snapshot.documents.mapNotNull { it.toObject(User::class.java) }
+                onResult(users)
+            }
         }
     }
+
     /**
-     * Uploads a local image URI to Firebase Cloud Storage and returns the public download URL.
+     * Uploads the image to Cloud Storage.
      */
     fun uploadProfileImage(uri: Uri, onSuccess: (String) -> Unit, onFailure: (Exception) -> Unit) {
         val auth = FirebaseAuth.getInstance()
@@ -108,7 +103,7 @@ object FirebaseManager {
     }
 
     /**
-     * Deletes the user's profile image from Cloud Storage.
+     * Deletes the physical image file from Cloud Storage.
      */
     fun deleteProfileImage(onSuccess: () -> Unit, onFailure: (Exception) -> Unit) {
         val auth = FirebaseAuth.getInstance()
@@ -125,7 +120,6 @@ object FirebaseManager {
         imageRef.delete()
             .addOnSuccessListener { onSuccess() }
             .addOnFailureListener { e ->
-                // If the object does not exist (Error 404), treat it as a success since the goal is already met
                 if (e is StorageException && e.errorCode == StorageException.ERROR_OBJECT_NOT_FOUND) {
                     onSuccess()
                 } else {

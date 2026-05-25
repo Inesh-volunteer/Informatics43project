@@ -1,7 +1,7 @@
 package com.yolojj333.heythere.models
 
 /**
- * Represents a user profile in the Beacon app.
+ * Represents a user profile in the HeyThere app.
  */
 data class User(
     var userId: String = "",
