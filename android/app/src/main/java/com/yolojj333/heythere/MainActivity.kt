@@ -335,6 +335,7 @@ fun LocationPermissionScreen(
     )
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @SuppressLint("MissingPermission")
 @Composable
 fun BeaconMapScreen(
@@ -351,6 +352,20 @@ fun BeaconMapScreen(
     var currentMapType by remember { mutableStateOf(MapType.NORMAL) }
     var currentTick by remember { mutableStateOf(System.currentTimeMillis()) }
 
+    // NEW: Track physical location for the list's distance math
+    var myPhysicalLocation by remember { mutableStateOf<LatLng?>(null) }
+
+    // NEW: Bottom Sheet Controls
+    var searchRadiusKm by remember { mutableFloatStateOf(10f) } // Default 10km search
+    var sortByDistance by remember { mutableStateOf(true) } // true = Distance, false = Interests
+
+    val scaffoldState = rememberBottomSheetScaffoldState(
+        bottomSheetState = rememberStandardBottomSheetState(
+            initialValue = SheetValue.PartiallyExpanded,
+            skipHiddenState = true
+        )
+    )
+
     LaunchedEffect(Unit) {
         while (true) {
             kotlinx.coroutines.delay(60_000L)
@@ -363,6 +378,7 @@ fun BeaconMapScreen(
             override fun onLocationResult(result: com.google.android.gms.location.LocationResult) {
                 result.lastLocation?.let { location ->
                     val exactLatLng = LatLng(location.latitude, location.longitude)
+                    myPhysicalLocation = exactLatLng // Save for list math
 
                     sharedPreferences.edit()
                         .putFloat("last_lat", exactLatLng.latitude.toFloat())
@@ -401,9 +417,7 @@ fun BeaconMapScreen(
                             publicLongitude = broadcastLng,
                             lastUpdatedTimestamp = System.currentTimeMillis()
                         )
-
-                        val updatedUser = currentUser.copy(locationData = newLocationData)
-                        onUserUpdate(updatedUser)
+                        onUserUpdate(currentUser.copy(locationData = newLocationData))
                     }
                 }
             }
@@ -411,145 +425,220 @@ fun BeaconMapScreen(
 
         if (hasLocationPermission) {
             val locationRequest = com.google.android.gms.location.LocationRequest.Builder(
-                com.google.android.gms.location.Priority.PRIORITY_HIGH_ACCURACY,
-                5000L
+                com.google.android.gms.location.Priority.PRIORITY_HIGH_ACCURACY, 5000L
             ).build()
-
-            fusedLocationClient.requestLocationUpdates(
-                locationRequest,
-                locationCallback,
-                android.os.Looper.getMainLooper()
-            )
+            fusedLocationClient.requestLocationUpdates(locationRequest, locationCallback, android.os.Looper.getMainLooper())
         }
-
-        onDispose {
-            fusedLocationClient.removeLocationUpdates(locationCallback)
-        }
+        onDispose { fusedLocationClient.removeLocationUpdates(locationCallback) }
     }
 
-    val mapProperties = MapProperties(
-        isMyLocationEnabled = hasLocationPermission,
-        mapType = currentMapType
-    )
-
-    val uiSettings = MapUiSettings(
-        myLocationButtonEnabled = true,
-        zoomControlsEnabled = false,
-        mapToolbarEnabled = true
-    )
-
-    val filteredUsers = remember(
-        currentUser.subscribedTags,
-        allCloudUsers,
-        currentUser.privacySettings.isGlobalLocationOn,
-        hasLocationPermission,
-        currentTick
-    ) {
-        if (!hasLocationPermission || !currentUser.privacySettings.isGlobalLocationOn) {
-            emptyList()
-        } else {
+    // 1. Filter global active users
+    val globalActiveUsers = remember(currentUser.subscribedTags, allCloudUsers, currentUser.privacySettings.isGlobalLocationOn, hasLocationPermission, currentTick) {
+        if (!hasLocationPermission || !currentUser.privacySettings.isGlobalLocationOn) emptyList()
+        else {
             val tenMinutesInMillis = 10 * 60 * 1000L
-
-            val activeUsers = allCloudUsers.filter {
+            val active = allCloudUsers.filter {
                 it.userId != currentUser.userId &&
                         it.privacySettings.isGlobalLocationOn &&
                         (currentTick - it.locationData.lastUpdatedTimestamp) <= tenMinutesInMillis
             }
+            if (currentUser.subscribedTags.isEmpty()) active
+            else active.filter { cloudUser -> cloudUser.subscribedTags.any { tag -> currentUser.subscribedTags.contains(tag) } }
+        }
+    }
 
-            if (currentUser.subscribedTags.isEmpty()) {
-                activeUsers
+    // 2. Filter & Sort users specifically for the Bottom Sheet list
+    val listUsers = remember(globalActiveUsers, myPhysicalLocation, searchRadiusKm, sortByDistance, currentUser.subscribedTags) {
+        if (myPhysicalLocation == null) return@remember emptyList<Pair<User, Float>>()
+
+        globalActiveUsers.mapNotNull { targetUser ->
+            if (targetUser.locationData.publicLatitude == 0.0) return@mapNotNull null
+
+            val results = FloatArray(1)
+            android.location.Location.distanceBetween(
+                myPhysicalLocation!!.latitude, myPhysicalLocation!!.longitude,
+                targetUser.locationData.publicLatitude, targetUser.locationData.publicLongitude,
+                results
+            )
+            val distanceMeters = results[0]
+            if (distanceMeters <= searchRadiusKm * 1000) Pair(targetUser, distanceMeters) else null
+        }.sortedWith { a, b ->
+            if (sortByDistance) {
+                a.second.compareTo(b.second) // Ascending distance
             } else {
-                activeUsers.filter { cloudUser ->
-                    cloudUser.subscribedTags.any { tag -> currentUser.subscribedTags.contains(tag) }
-                }
+                val aShared = a.first.subscribedTags.intersect(currentUser.subscribedTags.toSet()).size
+                val bShared = b.first.subscribedTags.intersect(currentUser.subscribedTags.toSet()).size
+                if (aShared != bShared) bShared.compareTo(aShared) // Descending shared interests
+                else a.second.compareTo(b.second) // Tie-breaker: closest distance
             }
         }
     }
 
-    Box(modifier = Modifier.fillMaxSize()) {
-        GoogleMap(
-            modifier = Modifier.fillMaxSize(),
-            cameraPositionState = cameraPositionState,
-            properties = mapProperties,
-            uiSettings = uiSettings
-        ) {
-            filteredUsers.forEach { user ->
-                if (user.locationData.publicLatitude != 0.0 && user.locationData.publicLongitude != 0.0) {
-                    val position = LatLng(user.locationData.publicLatitude, user.locationData.publicLongitude)
+    val mapProperties = MapProperties(isMyLocationEnabled = hasLocationPermission, mapType = currentMapType)
+    val uiSettings = MapUiSettings(myLocationButtonEnabled = true, zoomControlsEnabled = false, mapToolbarEnabled = true)
 
-                    MarkerInfoWindowContent(
-                        state = MarkerState(position = position)
+    BottomSheetScaffold(
+        scaffoldState = scaffoldState,
+        sheetPeekHeight = 80.dp, // How much of the menu shows when collapsed
+        sheetContainerColor = MaterialTheme.colorScheme.surface,
+        sheetContent = {
+            Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp)) {
+                Text(text = "Nearby Users", fontSize = 20.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(bottom = 8.dp))
+
+                // Radius Slider
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text("Radius: ${searchRadiusKm.toInt()}km", fontSize = 14.sp, modifier = Modifier.width(90.dp))
+                    Slider(
+                        value = searchRadiusKm,
+                        onValueChange = { searchRadiusKm = it },
+                        valueRange = 1f..50f, // 1km to 50km
+                        modifier = Modifier.weight(1f)
+                    )
+                }
+
+                // Sort Toggle
+                Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(bottom = 8.dp)) {
+                    Text("Sort by:", fontSize = 14.sp, modifier = Modifier.width(90.dp))
+                    FilterChip(
+                        selected = sortByDistance,
+                        onClick = { sortByDistance = true },
+                        label = { Text("Distance") }
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    FilterChip(
+                        selected = !sortByDistance,
+                        onClick = { sortByDistance = false },
+                        label = { Text("Interests") }
+                    )
+                }
+
+                Divider(modifier = Modifier.padding(vertical = 8.dp))
+
+                // The User List
+                if (listUsers.isEmpty()) {
+                    Text("No users found nearby.", color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(vertical = 16.dp))
+                } else {
+                    androidx.compose.foundation.lazy.LazyColumn(
+                        modifier = Modifier.fillMaxWidth().heightIn(max = 400.dp) // Limits height when fully expanded
                     ) {
-                        val sharedTags = user.subscribedTags.intersect(currentUser.subscribedTags.toSet()).take(3)
-                        val tagsText = if (sharedTags.isNotEmpty()) {
-                            sharedTags.joinToString(", ")
-                        } else {
-                            "No shared interests"
-                        }
+                        items(listUsers.size) { index ->
+                            val (listUser, distance) = listUsers[index]
+                            val sharedTags = listUser.subscribedTags.intersect(currentUser.subscribedTags.toSet())
+                            val distanceString = if (distance < 1000) "${distance.toInt()} m" else String.format("%.1f km", distance / 1000)
 
-                        val diffMs = System.currentTimeMillis() - user.locationData.lastUpdatedTimestamp
-                        val diffMins = java.util.concurrent.TimeUnit.MILLISECONDS.toMinutes(diffMs)
-                        val timeString = if (diffMins < 1) "Just now" else "$diffMins mins ago"
-
-                        Row(
-                            modifier = Modifier.padding(8.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Box(
-                                modifier = Modifier
-                                    .size(48.dp)
-                                    .clip(CircleShape)
-                                    .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.1f)),
-                                contentAlignment = Alignment.Center
+                            Row(
+                                modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
+                                verticalAlignment = Alignment.CenterVertically
                             ) {
-                                Icon(
-                                    imageVector = Icons.Filled.AccountCircle,
-                                    contentDescription = "Profile",
-                                    tint = MaterialTheme.colorScheme.primary,
-                                    modifier = Modifier.size(32.dp)
-                                )
-                            }
+                                // Profile Pic
+                                Box(
+                                    modifier = Modifier.size(50.dp).clip(androidx.compose.foundation.shape.CircleShape).background(MaterialTheme.colorScheme.surfaceVariant),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    if (listUser.profileImageUrls.isNotEmpty() && listUser.profileImageUrls.first().isNotBlank()) {
+                                        coil.compose.AsyncImage(
+                                            model = listUser.profileImageUrls.first(),
+                                            contentDescription = "Profile",
+                                            modifier = Modifier.fillMaxSize(),
+                                            contentScale = androidx.compose.ui.layout.ContentScale.Crop
+                                        )
+                                    } else {
+                                        Icon(Icons.Filled.AccountCircle, contentDescription = "Profile", tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(36.dp))
+                                    }
+                                }
 
-                            Spacer(modifier = Modifier.width(12.dp))
+                                Spacer(modifier = Modifier.width(12.dp))
 
-                            Column {
-                                // Hardcoding colors to ensure visibility against the forced white background
-                                Text(text = user.displayName, fontWeight = FontWeight.Bold, fontSize = 16.sp, color = androidx.compose.ui.graphics.Color.Black)
-                                Text(text = tagsText, fontSize = 14.sp, color = androidx.compose.ui.graphics.Color.Black)
-                                Spacer(modifier = Modifier.height(2.dp))
-                                Text(text = timeString, fontSize = 12.sp, color = androidx.compose.ui.graphics.Color.Gray)
+                                // User Info
+                                Column(modifier = Modifier.weight(1f)) {
+                                    Text(text = listUser.displayName, fontWeight = FontWeight.Bold, fontSize = 16.sp)
+                                    Text(
+                                        text = if (sharedTags.isNotEmpty()) sharedTags.take(3).joinToString(", ") else "No shared interests",
+                                        fontSize = 14.sp,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                }
+
+                                // Distance
+                                Text(text = distanceString, fontWeight = FontWeight.SemiBold, color = MaterialTheme.colorScheme.primary)
                             }
                         }
                     }
                 }
             }
-
-            if (currentUser.privacySettings.isGlobalLocationOn &&
-                !currentUser.privacySettings.usePreciseLocation &&
-                currentUser.locationData.publicLatitude != 0.0 &&
-                currentUser.locationData.publicLongitude != 0.0) {
-                Marker(
-                    state = MarkerState(
-                        position = LatLng(currentUser.locationData.publicLatitude, currentUser.locationData.publicLongitude)
-                    ),
-                    title = "You (Broadcasted)",
-                    snippet = "This is where others see you",
-                    icon = BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_ORANGE)
-                )
-            }
         }
+    ) { innerPadding ->
+        // The Map itself (now inside the scaffold so the sheet overlays it smoothly)
+        Box(modifier = Modifier.fillMaxSize().padding(innerPadding)) {
+            GoogleMap(
+                modifier = Modifier.fillMaxSize(),
+                cameraPositionState = cameraPositionState,
+                properties = mapProperties,
+                uiSettings = uiSettings
+            ) {
+                globalActiveUsers.forEach { user ->
+                    if (user.locationData.publicLatitude != 0.0 && user.locationData.publicLongitude != 0.0) {
+                        val position = LatLng(user.locationData.publicLatitude, user.locationData.publicLongitude)
 
-        FloatingActionButton(
-            onClick = {
-                currentMapType = if (currentMapType == MapType.NORMAL) MapType.HYBRID else MapType.NORMAL
-            },
-            modifier = Modifier
-                .align(Alignment.TopStart)
-                .padding(16.dp),
-            containerColor = MaterialTheme.colorScheme.surface,
-            contentColor = MaterialTheme.colorScheme.primary
-        ) {
-            Icon(Icons.Filled.Layers, contentDescription = "Toggle Map Type")
+                        MarkerInfoWindowContent(state = MarkerState(position = position)) {
+                            val sharedTags = user.subscribedTags.intersect(currentUser.subscribedTags.toSet()).take(3)
+                            val tagsText = if (sharedTags.isNotEmpty()) sharedTags.joinToString(", ") else "No shared interests"
+                            val diffMs = System.currentTimeMillis() - user.locationData.lastUpdatedTimestamp
+                            val diffMins = java.util.concurrent.TimeUnit.MILLISECONDS.toMinutes(diffMs)
+                            val timeString = if (diffMins < 1) "Just now" else "$diffMins mins ago"
+
+                            Row(modifier = Modifier.padding(8.dp), verticalAlignment = Alignment.CenterVertically) {
+                                Box(
+                                    modifier = Modifier.size(48.dp).clip(androidx.compose.foundation.shape.CircleShape).background(MaterialTheme.colorScheme.primary.copy(alpha = 0.1f)),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    if (user.profileImageUrls.isNotEmpty() && user.profileImageUrls.first().isNotBlank()) {
+                                        coil.compose.AsyncImage(
+                                            model = user.profileImageUrls.first(),
+                                            contentDescription = "Profile",
+                                            modifier = Modifier.fillMaxSize(),
+                                            contentScale = androidx.compose.ui.layout.ContentScale.Crop
+                                        )
+                                    } else {
+                                        Icon(Icons.Filled.AccountCircle, contentDescription = "Profile", tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(32.dp))
+                                    }
+                                }
+
+                                Spacer(modifier = Modifier.width(12.dp))
+
+                                Column {
+                                    Text(text = user.displayName, fontWeight = FontWeight.Bold, fontSize = 16.sp, color = androidx.compose.ui.graphics.Color.Black)
+                                    Text(text = tagsText, fontSize = 14.sp, color = androidx.compose.ui.graphics.Color.Black)
+                                    Spacer(modifier = Modifier.height(2.dp))
+                                    Text(text = timeString, fontSize = 12.sp, color = androidx.compose.ui.graphics.Color.Gray)
+                                }
+                            }
+                        }
+                    }
+                }
+
+                if (currentUser.privacySettings.isGlobalLocationOn &&
+                    !currentUser.privacySettings.usePreciseLocation &&
+                    currentUser.locationData.publicLatitude != 0.0 &&
+                    currentUser.locationData.publicLongitude != 0.0) {
+                    Marker(
+                        state = MarkerState(position = LatLng(currentUser.locationData.publicLatitude, currentUser.locationData.publicLongitude)),
+                        title = "You (Broadcasted)",
+                        snippet = "This is where others see you",
+                        icon = BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_ORANGE)
+                    )
+                }
+            }
+
+            // Floating Action Button
+            FloatingActionButton(
+                onClick = { currentMapType = if (currentMapType == MapType.NORMAL) MapType.HYBRID else MapType.NORMAL },
+                modifier = Modifier.align(Alignment.TopStart).padding(16.dp),
+                containerColor = MaterialTheme.colorScheme.surface,
+                contentColor = MaterialTheme.colorScheme.primary
+            ) {
+                Icon(Icons.Filled.Layers, contentDescription = "Toggle Map Type")
+            }
         }
     }
 }
