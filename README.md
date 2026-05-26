@@ -29,7 +29,7 @@ Discussed architectural summary, went over Android app prototype, decided to cre
 Meeting #4 (5/9/26) Online
 Inesh Agarwal, Sinjon Dearborn, Jayden Jieyu Lee, Annika Liu, Justin Gia Tran
 
-Dicussed how we will divide the work out for HW 2, and discussed our plans for future parts of the assignment such as UI creation and overall design implementation. Additionally, we went over a base timeline and ideas for pushing our project forward. 
+Dicussed how we will divide the work out for HW 2, and discussed our plans for future parts of the assignment such as UI creation and overall design implementation. Additionally, we went over a base timeline and ideas for pushing our project forward.
 
 <img src="https://media2.giphy.com/media/v1.Y2lkPTc5MGI3NjExb2x5bHFuZHE4MXJjeTlqaHRweWZia3l4dTdteXR6ZmRmcnRhbHU1MCZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/fzj87vYM8EgvcungmC/giphy.gif" alt="Alt Text" width="200"/>
 
@@ -46,4 +46,9 @@ Inesh Agarwal, Sinjon Dearborn, Jayden Jieyu Lee, Annika Liu, Justin Gia Tran
 Discussed future implementation for the app as well as UI design and working on IOS version of the app.
 
 <img width="427" height="427" alt="giphy" src="https://github.com/user-attachments/assets/62c50bb0-bfbe-4535-94ec-39158aaf70dc" />
+
+Update 5/25/26 Online
+
+Finished and released the iOS prototype of HeyThere! Developed by Inesh
+
 
