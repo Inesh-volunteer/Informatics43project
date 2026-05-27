@@ -10,8 +10,8 @@ For our app, Hey There\!, we decided to focus on simplicity as our key design ch
 
 ### UI Prototypes-
 
-![][image2]  
-![][image3]
+![UI Protoype1](HW3UI-Prototype1.png) 
+![UI Protoype2](HW3UI-Prototype2.png)
 
 ### Create Account-
 
