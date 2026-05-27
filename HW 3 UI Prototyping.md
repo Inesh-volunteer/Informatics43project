@@ -4,7 +4,8 @@
 
 ### Wireframes-
 
-![][image1]  
+![UI Wireframes](HW3 Wireframes.png)
+
 For our app, Hey There\!, we decided to focus on simplicity as our key design choice. This as a whole would make our app reliable and easy to follow; and with the addition of labelling almost everything, users will have a better time using our app. Additionally, we stuck to 6 main screens for our app: Create Account, Log In/Welcome Back, Profile Page, Location Settings, Messages and Map. With these 6 screens, users won’t have to scramble through multiple menus or tabs, just to find a certain feature. Now, with these simple wireframes, we can now transform them into functional UI applications.
 
 ### UI Prototypes-
