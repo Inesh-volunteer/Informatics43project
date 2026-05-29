@@ -3,6 +3,13 @@ package com.yolojj333.heythere
 import android.Manifest
 import android.annotation.SuppressLint
 import android.content.Context
+import android.graphics.Bitmap
+import android.graphics.Canvas
+import android.graphics.Paint
+import android.graphics.PorterDuff
+import android.graphics.PorterDuffXfermode
+import android.graphics.Rect
+import android.graphics.RectF
 import android.graphics.drawable.BitmapDrawable
 import android.os.Bundle
 import android.util.Log
@@ -32,6 +39,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.imageLoader
 import com.google.android.gms.location.LocationServices
+import com.google.android.gms.maps.model.BitmapDescriptor
 import com.google.android.gms.maps.model.BitmapDescriptorFactory
 import com.google.android.gms.maps.model.CameraPosition
 import com.google.android.gms.maps.model.LatLng
@@ -480,7 +488,7 @@ fun BeaconMapScreen(
 
     BottomSheetScaffold(
         scaffoldState = scaffoldState,
-        sheetPeekHeight = 80.dp,
+        sheetPeekHeight = 100.dp,
         sheetContainerColor = MaterialTheme.colorScheme.surface,
         sheetContent = {
             Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp)) {
@@ -579,34 +587,44 @@ fun BeaconMapScreen(
                             val markerState = rememberMarkerState(position = position)
                             markerState.position = position
 
-                            // NEW: Download the bitmap asynchronously completely outside the Google Maps rendering loop
                             var userImage by remember { mutableStateOf<androidx.compose.ui.graphics.ImageBitmap?>(null) }
+                            var mapPinIcon by remember { mutableStateOf<BitmapDescriptor?>(null) }
+
                             val url = user.profileImageUrls.firstOrNull()
 
-                            LaunchedEffect(url) {
+                            // NEW: Added mapPinSize as a key so it redraws when the setting changes
+                            LaunchedEffect(url, currentUser.privacySettings.mapPinSize) {
                                 if (!url.isNullOrBlank()) {
                                     val request = coil.request.ImageRequest.Builder(context)
                                         .data(url)
-                                        .allowHardware(false) // Crucial for software-rendered snapshots
+                                        .allowHardware(false)
                                         .build()
 
                                     val result = context.imageLoader.execute(request)
                                     if (result is coil.request.SuccessResult) {
                                         val drawable = result.drawable
                                         if (drawable is BitmapDrawable) {
-                                            userImage = drawable.bitmap.asImageBitmap()
+                                            val rawBitmap = drawable.bitmap
 
-                                            // If the user happens to have the bubble already open while it downloads, force a redraw
+                                            userImage = rawBitmap.asImageBitmap()
+
+                                            // Pass the dynamic setting directly to the graphics utility
+                                            mapPinIcon = createCircularMapPin(rawBitmap, currentUser.privacySettings.mapPinSize)
+
                                             if (selectedUserId == user.userId) {
                                                 markerState.showInfoWindow()
                                             }
                                         }
                                     }
+                                } else {
+                                    userImage = null
+                                    mapPinIcon = null
                                 }
                             }
 
                             MarkerInfoWindowContent(
                                 state = markerState,
+                                icon = mapPinIcon,
                                 onClick = {
                                     selectedUserId = user.userId
                                     false
@@ -626,7 +644,6 @@ fun BeaconMapScreen(
                                         modifier = Modifier.size(48.dp).clip(androidx.compose.foundation.shape.CircleShape).background(MaterialTheme.colorScheme.primary.copy(alpha = 0.1f)),
                                         contentAlignment = Alignment.Center
                                     ) {
-                                        // NEW: Feed the static, pre-loaded ImageBitmap directly to the native Compose Image
                                         if (userImage != null) {
                                             Image(
                                                 bitmap = userImage!!,
@@ -676,4 +693,36 @@ fun BeaconMapScreen(
             }
         }
     }
+}
+
+/**
+ * Takes a raw downloaded Bitmap, cuts it into a circle, adds a white border,
+ * and converts it into a Google Maps BitmapDescriptor dynamically.
+ */
+fun createCircularMapPin(bitmap: Bitmap, size: Int): BitmapDescriptor {
+    val output = Bitmap.createBitmap(size, size, Bitmap.Config.ARGB_8888)
+    val canvas = Canvas(output)
+
+    val scaledBitmap = Bitmap.createScaledBitmap(bitmap, size, size, false)
+
+    val paint = Paint().apply {
+        isAntiAlias = true
+    }
+    val rect = Rect(0, 0, size, size)
+    val rectF = RectF(rect)
+
+    canvas.drawARGB(0, 0, 0, 0)
+    canvas.drawRoundRect(rectF, size / 2f, size / 2f, paint)
+
+    paint.xfermode = PorterDuffXfermode(PorterDuff.Mode.SRC_IN)
+    canvas.drawBitmap(scaledBitmap, rect, rect, paint)
+
+    paint.xfermode = null
+    paint.style = Paint.Style.STROKE
+    paint.color = android.graphics.Color.WHITE
+    // Dynamically scale the border width to 5% of the total pin size
+    paint.strokeWidth = size / 20f
+    canvas.drawRoundRect(rectF, size / 2f, size / 2f, paint)
+
+    return BitmapDescriptorFactory.fromBitmap(output)
 }

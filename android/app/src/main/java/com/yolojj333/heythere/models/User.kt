@@ -35,12 +35,13 @@ data class BlackoutZone(
 )
 
 /**
- * Manages the user's privacy toggles.
+ * Manages the user's privacy toggles and UI settings.
  */
 data class PrivacySettings(
     var isGlobalLocationOn: Boolean = true,
     var usePreciseLocation: Boolean = false,
     var isBackgroundLocationEnabled: Boolean = false,
     var backgroundUpdateIntervalSeconds: Int = 60,
-    var activeBlackoutZones: List<BlackoutZone> = emptyList() // Changed from List<String>
+    var activeBlackoutZones: List<BlackoutZone> = emptyList(),
+    var mapPinSize: Int = 100
 )

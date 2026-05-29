@@ -32,7 +32,6 @@ fun SettingsScreen(
     onSignOut: () -> Unit
 ) {
     var zoneInput by remember { mutableStateOf("") }
-    // NEW: State for the radius slider
     var radiusInput by remember { mutableFloatStateOf(200f) }
     var intervalInput by remember { mutableStateOf(privacySettings.backgroundUpdateIntervalSeconds.toString()) }
 
@@ -114,7 +113,6 @@ fun SettingsScreen(
         )
         Spacer(modifier = Modifier.height(16.dp))
 
-        // Display Active Zones with their specific radius
         privacySettings.activeBlackoutZones.forEach { zone ->
             Row(
                 modifier = Modifier
@@ -139,7 +137,6 @@ fun SettingsScreen(
 
         if (privacySettings.activeBlackoutZones.size < 3) {
             Spacer(modifier = Modifier.height(8.dp))
-            // NEW: A Card layout to hold the address and radius inputs cleanly
             Card(
                 modifier = Modifier.fillMaxWidth(),
                 colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
@@ -160,7 +157,7 @@ fun SettingsScreen(
                     Slider(
                         value = radiusInput,
                         onValueChange = { radiusInput = it },
-                        valueRange = 50f..2000f, // 50m to 2km
+                        valueRange = 50f..2000f,
                         enabled = !isGeocoding
                     )
 
@@ -184,13 +181,13 @@ fun SettingsScreen(
                                                     name = zoneInput.trim(),
                                                     latitude = location.latitude,
                                                     longitude = location.longitude,
-                                                    radiusMeters = radiusInput.toDouble() // Inject the slider value here!
+                                                    radiusMeters = radiusInput.toDouble()
                                                 )
                                                 val newZones = privacySettings.activeBlackoutZones.toMutableList()
                                                 newZones.add(newZone)
                                                 onSettingsChange(privacySettings.copy(activeBlackoutZones = newZones))
                                                 zoneInput = ""
-                                                radiusInput = 200f // Reset slider
+                                                radiusInput = 200f
                                             } else {
                                                 Toast.makeText(context, "Address not found. Be more specific.", Toast.LENGTH_SHORT).show()
                                             }
@@ -224,6 +221,25 @@ fun SettingsScreen(
         }
 
         Divider(modifier = Modifier.padding(vertical = 16.dp))
+
+        Text(text = "Map Appearance", fontSize = 20.sp, fontWeight = FontWeight.SemiBold, color = MaterialTheme.colorScheme.primary)
+        Spacer(modifier = Modifier.height(8.dp))
+
+        Text(text = "Map Pin Size", fontSize = 16.sp, fontWeight = FontWeight.Medium)
+        Text(text = "${privacySettings.mapPinSize}px", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 14.sp)
+
+        Slider(
+            value = privacySettings.mapPinSize.toFloat(),
+            onValueChange = { newValue ->
+                onSettingsChange(privacySettings.copy(mapPinSize = newValue.roundToInt()))
+            },
+            valueRange = 50f..250f,
+            steps = 19,
+            modifier = Modifier.fillMaxWidth()
+        )
+
+        Divider(modifier = Modifier.padding(vertical = 16.dp))
+
         Button(
             onClick = onSignOut,
             colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error),
