@@ -19,6 +19,6 @@ class ExampleInstrumentedTest {
     fun useAppContext() {
         // Context of the app under test.
         val appContext = InstrumentationRegistry.getInstrumentation().targetContext
-        assertEquals("com.yolojj333.beacon", appContext.packageName)
+        assertEquals("com.yolojj333.heythere", appContext.packageName)
     }
 }

@@ -1,0 +1,219 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>ProfileScreen.kt</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=0;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">debug</a> &gt; <a href="index.source.html" class="el_package">com.yolojj333.heythere.ui</a> &gt; <span class="el_source">ProfileScreen.kt</span></div><h1>ProfileScreen.kt</h1><pre class="source lang-java linenums">package com.yolojj333.heythere.ui
+
+import android.net.Uri
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.PickVisualMediaRequest
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.AddAPhoto
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import coil.compose.AsyncImage
+import com.yolojj333.heythere.models.User
+import kotlin.math.roundToInt
+
+<span class="nc" id="L28">@OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)</span>
+@Composable
+fun ProfileScreen(
+    user: User,
+    onUserChange: (User) -&gt; Unit,
+    onSaveProfile: () -&gt; Unit
+<span class="nc bnc" id="L34" title="All 18 branches missed.">) {</span>
+<span class="nc" id="L35">    var showRemoveDialog by remember { mutableStateOf(false) }</span>
+
+<span class="nc" id="L37">    val photoPickerLauncher = rememberLauncherForActivityResult(</span>
+<span class="nc bnc" id="L38" title="All 2 branches missed.">        contract = ActivityResultContracts.PickVisualMedia(),</span>
+<span class="nc" id="L39">        onResult = { uri: Uri? -&gt;</span>
+<span class="nc bnc" id="L40" title="All 2 branches missed.">            uri?.let {</span>
+<span class="nc" id="L41">                val updatedUser = user.copy(profileImageUrls = listOf(it.toString()))</span>
+<span class="nc" id="L42">                onUserChange(updatedUser)</span>
+<span class="nc" id="L43">            }</span>
+<span class="nc" id="L44">        }</span>
+    )
+
+<span class="nc" id="L47">    val predefinedTags = listOf(</span>
+<span class="nc" id="L48">        &quot;Coffee&quot;, &quot;Gym&quot;, &quot;Coding&quot;, &quot;Music&quot;, &quot;Movies&quot;, &quot;Art&quot;, &quot;Books&quot;,</span>
+<span class="nc" id="L49">        &quot;Traveling&quot;, &quot;Photography&quot;, &quot;Cooking&quot;, &quot;Sports&quot;, &quot;Technology&quot;,</span>
+<span class="nc" id="L50">        &quot;Outdoors&quot;, &quot;Fitness&quot;, &quot;Pets&quot;, &quot;DIY&quot;, &quot;Fashion&quot;, &quot;Gaming&quot;, &quot;Hiking&quot;,</span>
+<span class="nc" id="L51">        &quot;Foodie&quot;, &quot;Dancing&quot;, &quot;Yoga&quot;, &quot;Anime&quot;, &quot;Board Games&quot;, &quot;Cars&quot;, &quot;Investing&quot;</span>
+    )
+
+<span class="nc" id="L54">    Column(</span>
+<span class="nc" id="L55">        modifier = Modifier</span>
+<span class="nc" id="L56">            .fillMaxSize()</span>
+<span class="nc" id="L57">            .padding(16.dp)</span>
+<span class="nc" id="L58">            .verticalScroll(rememberScrollState()),</span>
+<span class="nc" id="L59">        horizontalAlignment = Alignment.Start</span>
+    ) {
+        // HEADER ROW
+<span class="nc" id="L62">        Row(</span>
+<span class="nc" id="L63">            modifier = Modifier.fillMaxWidth(),</span>
+<span class="nc" id="L64">            horizontalArrangement = Arrangement.SpaceBetween,</span>
+<span class="nc" id="L65">            verticalAlignment = Alignment.CenterVertically</span>
+        ) {
+<span class="nc" id="L67">            Text(text = &quot;Your Profile&quot;, fontSize = 28.sp, fontWeight = FontWeight.Bold)</span>
+
+<span class="nc" id="L69">            Box(</span>
+<span class="nc" id="L70">                modifier = Modifier</span>
+<span class="nc" id="L71">                    .size(80.dp)</span>
+<span class="nc" id="L72">                    .clip(CircleShape)</span>
+<span class="nc" id="L73">                    .background(MaterialTheme.colorScheme.surfaceVariant)</span>
+<span class="nc" id="L74">                    .clickable {</span>
+<span class="nc" id="L75">                        photoPickerLauncher.launch(</span>
+<span class="nc" id="L76">                            PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)</span>
+                        )
+<span class="nc" id="L78">                    },</span>
+<span class="nc" id="L79">                contentAlignment = Alignment.Center</span>
+            ) {
+<span class="nc bnc" id="L81" title="All 8 branches missed.">                if (user.profileImageUrls.isNotEmpty() &amp;&amp; user.profileImageUrls.first().isNotBlank()) {</span>
+<span class="nc" id="L82">                    AsyncImage(</span>
+<span class="nc" id="L83">                        model = user.profileImageUrls.first(),</span>
+<span class="nc" id="L84">                        contentDescription = &quot;Profile Picture&quot;,</span>
+<span class="nc" id="L85">                        modifier = Modifier.fillMaxSize(),</span>
+<span class="nc" id="L86">                        contentScale = ContentScale.Crop</span>
+                    )
+<span class="nc" id="L88">                } else {</span>
+<span class="nc" id="L89">                    Icon(</span>
+<span class="nc" id="L90">                        imageVector = Icons.Filled.AddAPhoto,</span>
+<span class="nc" id="L91">                        contentDescription = &quot;Add Photo&quot;,</span>
+<span class="nc" id="L92">                        tint = MaterialTheme.colorScheme.onSurfaceVariant,</span>
+<span class="nc" id="L93">                        modifier = Modifier.size(32.dp)</span>
+                    )
+                }
+<span class="nc" id="L96">            }</span>
+<span class="nc" id="L97">        }</span>
+
+<span class="nc" id="L99">        Spacer(modifier = Modifier.height(8.dp))</span>
+
+<span class="nc" id="L101">        OutlinedTextField(</span>
+<span class="nc bnc" id="L102" title="All 2 branches missed.">            value = user.displayName,</span>
+<span class="nc" id="L103">            onValueChange = { onUserChange(user.copy(displayName = it)) },</span>
+<span class="nc bnc" id="L104" title="All 2 branches missed.">            label = { Text(&quot;Display Name&quot;) },</span>
+<span class="nc" id="L105">            modifier = Modifier.fillMaxWidth(),</span>
+<span class="nc" id="L106">            singleLine = true</span>
+        )
+
+<span class="nc" id="L109">        Spacer(modifier = Modifier.height(16.dp))</span>
+
+<span class="nc" id="L111">        OutlinedTextField(</span>
+<span class="nc bnc" id="L112" title="All 2 branches missed.">            value = user.bio,</span>
+<span class="nc" id="L113">            onValueChange = { onUserChange(user.copy(bio = it)) },</span>
+<span class="nc bnc" id="L114" title="All 2 branches missed.">            label = { Text(&quot;Bio&quot;) },</span>
+<span class="nc bnc" id="L115" title="All 2 branches missed.">            placeholder = { Text(&quot;Tell me about yourself&quot;) },</span>
+<span class="nc" id="L116">            modifier = Modifier.fillMaxWidth(),</span>
+<span class="nc" id="L117">            minLines = 3,</span>
+<span class="nc" id="L118">            maxLines = 5</span>
+        )
+
+<span class="nc" id="L121">        Spacer(modifier = Modifier.height(24.dp))</span>
+
+<span class="nc" id="L123">        Text(text = &quot;Age: ${user.age}&quot;, fontSize = 18.sp, fontWeight = FontWeight.Medium)</span>
+<span class="nc" id="L124">        Slider(</span>
+<span class="nc bnc" id="L125" title="All 2 branches missed.">            value = user.age.toFloat(),</span>
+<span class="nc" id="L126">            onValueChange = { onUserChange(user.copy(age = it.roundToInt())) },</span>
+<span class="nc" id="L127">            valueRange = 18f..111f,</span>
+<span class="nc" id="L128">            steps = 111 - 18 - 1,</span>
+<span class="nc" id="L129">            modifier = Modifier.fillMaxWidth()</span>
+        )
+
+<span class="nc" id="L132">        Spacer(modifier = Modifier.height(16.dp))</span>
+
+<span class="nc" id="L134">        OutlinedTextField(</span>
+<span class="nc bnc" id="L135" title="All 2 branches missed.">            value = user.gender,</span>
+<span class="nc" id="L136">            onValueChange = { onUserChange(user.copy(gender = it)) },</span>
+<span class="nc bnc" id="L137" title="All 2 branches missed.">            label = { Text(&quot;Gender Identity&quot;) },</span>
+<span class="nc" id="L138">            modifier = Modifier.fillMaxWidth(),</span>
+<span class="nc" id="L139">            singleLine = true</span>
+        )
+
+<span class="nc" id="L142">        Spacer(modifier = Modifier.height(24.dp))</span>
+
+<span class="nc" id="L144">        Text(text = &quot;Interests&quot;, fontSize = 20.sp, fontWeight = FontWeight.SemiBold, color = MaterialTheme.colorScheme.primary)</span>
+<span class="nc" id="L145">        Text(text = &quot;Select tags that match your interests.&quot;, fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)</span>
+
+<span class="nc" id="L147">        Spacer(modifier = Modifier.height(8.dp))</span>
+
+<span class="nc" id="L149">        FlowRow(</span>
+<span class="nc" id="L150">            modifier = Modifier.fillMaxWidth(),</span>
+<span class="nc" id="L151">            horizontalArrangement = Arrangement.spacedBy(8.dp),</span>
+<span class="nc" id="L152">            verticalArrangement = Arrangement.spacedBy(8.dp)</span>
+        ) {
+<span class="nc" id="L154">            predefinedTags.forEach { tag -&gt;</span>
+<span class="nc" id="L155">                val isSelected = user.subscribedTags.contains(tag)</span>
+<span class="nc" id="L156">                FilterChip(</span>
+<span class="nc bnc" id="L157" title="All 2 branches missed.">                    selected = isSelected,</span>
+<span class="nc" id="L158">                    onClick = {</span>
+<span class="nc bnc" id="L159" title="All 2 branches missed.">                        val newTags = if (isSelected) {</span>
+<span class="nc" id="L160">                            user.subscribedTags - tag</span>
+                        } else {
+<span class="nc" id="L162">                            user.subscribedTags + tag</span>
+                        }
+<span class="nc" id="L164">                        onUserChange(user.copy(subscribedTags = newTags))</span>
+<span class="nc" id="L165">                    },</span>
+<span class="nc bnc" id="L166" title="All 2 branches missed.">                    label = { Text(tag) }</span>
+                )
+<span class="nc" id="L168">            }</span>
+<span class="nc" id="L169">        }</span>
+
+<span class="nc" id="L171">        Spacer(modifier = Modifier.height(32.dp))</span>
+
+<span class="nc" id="L173">        Button(</span>
+<span class="nc" id="L174">            onClick = onSaveProfile,</span>
+<span class="nc" id="L175">            modifier = Modifier.fillMaxWidth(),</span>
+<span class="nc" id="L176">            colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)</span>
+<span class="nc" id="L177">        ) {</span>
+<span class="nc bnc" id="L178" title="All 2 branches missed.">            Text(&quot;Save Profile&quot;, fontSize = 16.sp, fontWeight = FontWeight.Bold)</span>
+<span class="nc" id="L179">        }</span>
+
+        // ONLY render this button if they actually have a profile picture
+<span class="nc bnc" id="L182" title="All 8 branches missed.">        if (user.profileImageUrls.isNotEmpty() &amp;&amp; user.profileImageUrls.first().isNotBlank()) {</span>
+<span class="nc" id="L183">            Spacer(modifier = Modifier.height(8.dp))</span>
+<span class="nc" id="L184">            TextButton(</span>
+<span class="nc" id="L185">                onClick = { showRemoveDialog = true },</span>
+<span class="nc" id="L186">                modifier = Modifier.fillMaxWidth()</span>
+<span class="nc" id="L187">            ) {</span>
+<span class="nc bnc" id="L188" title="All 2 branches missed.">                Text(&quot;Remove Profile Picture&quot;, color = MaterialTheme.colorScheme.error, fontSize = 16.sp, fontWeight = FontWeight.Bold)</span>
+<span class="nc" id="L189">            }</span>
+        }
+
+<span class="nc" id="L192">        Spacer(modifier = Modifier.height(32.dp))</span>
+<span class="nc" id="L193">    }</span>
+
+    // CONFIRMATION DIALOG
+<span class="nc bnc" id="L196" title="All 4 branches missed.">    if (showRemoveDialog) {</span>
+<span class="nc" id="L197">        AlertDialog(</span>
+<span class="nc" id="L198">            onDismissRequest = { showRemoveDialog = false },</span>
+<span class="nc bnc" id="L199" title="All 2 branches missed.">            title = { Text(&quot;Remove Profile Picture?&quot;) },</span>
+<span class="nc bnc" id="L200" title="All 2 branches missed.">            text = { Text(&quot;Are you sure you want to remove your profile picture? You still need to click 'Save Profile' to apply this change.&quot;) },</span>
+<span class="nc" id="L201">            confirmButton = {</span>
+<span class="nc bnc" id="L202" title="All 2 branches missed.">                TextButton(</span>
+<span class="nc" id="L203">                    onClick = {</span>
+<span class="nc" id="L204">                        onUserChange(user.copy(profileImageUrls = emptyList()))</span>
+<span class="nc" id="L205">                        showRemoveDialog = false</span>
+<span class="nc" id="L206">                    }</span>
+<span class="nc" id="L207">                ) {</span>
+<span class="nc bnc" id="L208" title="All 2 branches missed.">                    Text(&quot;Remove&quot;, color = MaterialTheme.colorScheme.error, fontWeight = FontWeight.Bold)</span>
+<span class="nc" id="L209">                }</span>
+<span class="nc" id="L210">            },</span>
+<span class="nc" id="L211">            dismissButton = {</span>
+<span class="nc bnc" id="L212" title="All 2 branches missed.">                TextButton(onClick = { showRemoveDialog = false }) {</span>
+<span class="nc bnc" id="L213" title="All 2 branches missed.">                    Text(&quot;Cancel&quot;, color = MaterialTheme.colorScheme.onSurface)</span>
+<span class="nc" id="L214">                }</span>
+<span class="nc" id="L215">            }</span>
+        )
+    }
+<span class="nc bnc" id="L218" title="All 2 branches missed.">}</span>
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span>Generated by the Android Gradle plugin 9.2.1</div></body></html>

@@ -1,0 +1,729 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>MainActivity.kt</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=0;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">debug</a> &gt; <a href="index.source.html" class="el_package">com.yolojj333.heythere</a> &gt; <span class="el_source">MainActivity.kt</span></div><h1>MainActivity.kt</h1><pre class="source lang-java linenums">package com.yolojj333.heythere
+
+import android.Manifest
+import android.annotation.SuppressLint
+import android.content.Context
+import android.graphics.Bitmap
+import android.graphics.Canvas
+import android.graphics.Paint
+import android.graphics.PorterDuff
+import android.graphics.PorterDuffXfermode
+import android.graphics.Rect
+import android.graphics.RectF
+import android.graphics.drawable.BitmapDrawable
+import android.os.Bundle
+import android.util.Log
+import android.widget.Toast
+import androidx.activity.ComponentActivity
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.compose.setContent
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.*
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.AccountCircle
+import androidx.compose.material.icons.filled.Layers
+import androidx.compose.material.icons.filled.Message
+import androidx.compose.material.icons.filled.Place
+import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import coil.imageLoader
+import com.google.android.gms.location.LocationServices
+import com.google.android.gms.maps.model.BitmapDescriptor
+import com.google.android.gms.maps.model.BitmapDescriptorFactory
+import com.google.android.gms.maps.model.CameraPosition
+import com.google.android.gms.maps.model.LatLng
+import com.google.firebase.auth.FirebaseAuth
+import com.google.maps.android.compose.*
+import com.yolojj333.heythere.models.LocationData
+import com.yolojj333.heythere.models.User
+import com.yolojj333.heythere.ui.AuthScreen
+import com.yolojj333.heythere.ui.MessagesScreen
+import com.yolojj333.heythere.ui.ProfileScreen
+import com.yolojj333.heythere.ui.SettingsScreen
+import com.yolojj333.heythere.ui.theme.BeaconTheme
+import com.yolojj333.heythere.utils.FirebaseManager
+import com.yolojj333.heythere.utils.LocationUtils
+
+<span class="nc" id="L58">class MainActivity : ComponentActivity() {</span>
+    override fun onCreate(savedInstanceState: Bundle?) {
+<span class="nc" id="L60">        super.onCreate(savedInstanceState)</span>
+<span class="nc" id="L61">        setContent {</span>
+<span class="nc bnc" id="L62" title="All 2 branches missed.">            BeaconTheme {</span>
+<span class="nc bnc" id="L63" title="All 2 branches missed.">                Surface(</span>
+<span class="nc" id="L64">                    modifier = Modifier.fillMaxSize(),</span>
+<span class="nc" id="L65">                    color = MaterialTheme.colorScheme.background</span>
+<span class="nc" id="L66">                ) {</span>
+<span class="nc bnc" id="L67" title="All 2 branches missed.">                    BeaconAppRoot()</span>
+<span class="nc" id="L68">                }</span>
+<span class="nc" id="L69">            }</span>
+<span class="nc" id="L70">        }</span>
+<span class="nc" id="L71">    }</span>
+}
+
+<span class="nc" id="L74">@Composable</span>
+<span class="nc bnc" id="L75" title="All 6 branches missed.">fun BeaconAppRoot() {</span>
+<span class="nc" id="L76">    val auth = FirebaseAuth.getInstance()</span>
+<span class="nc bnc" id="L77" title="All 2 branches missed.">    var isUserLoggedIn by remember { mutableStateOf(auth.currentUser != null) }</span>
+
+<span class="nc bnc" id="L79" title="All 2 branches missed.">    if (isUserLoggedIn) {</span>
+<span class="nc" id="L80">        MainAppScaffold(onSignOut = {</span>
+<span class="nc" id="L81">            auth.signOut()</span>
+<span class="nc" id="L82">            isUserLoggedIn = false</span>
+<span class="nc" id="L83">        })</span>
+<span class="nc bnc" id="L84" title="All 2 branches missed.">    } else {</span>
+<span class="nc" id="L85">        AuthScreen(onAuthSuccess = {</span>
+<span class="nc" id="L86">            isUserLoggedIn = true</span>
+<span class="nc" id="L87">        })</span>
+    }
+<span class="nc bnc" id="L89" title="All 2 branches missed.">}</span>
+
+<span class="nc" id="L91">@Composable</span>
+<span class="nc bnc" id="L92" title="All 10 branches missed.">fun MainAppScaffold(onSignOut: () -&gt; Unit) {</span>
+<span class="nc" id="L93">    val context = LocalContext.current</span>
+<span class="nc" id="L94">    val auth = FirebaseAuth.getInstance()</span>
+<span class="nc" id="L95">    val sharedPreferences = remember { context.getSharedPreferences(&quot;HeyTherePrefs&quot;, Context.MODE_PRIVATE) }</span>
+
+<span class="nc" id="L97">    var currentRoute by remember { mutableStateOf(&quot;map&quot;) }</span>
+<span class="nc" id="L98">    var currentUser by remember { mutableStateOf(User()) }</span>
+<span class="nc" id="L99">    var isProfileLoaded by remember { mutableStateOf(false) }</span>
+<span class="nc" id="L100">    var allCloudUsers by remember { mutableStateOf&lt;List&lt;User&gt;&gt;(emptyList()) }</span>
+
+<span class="nc" id="L102">    var isSavingProfile by remember { mutableStateOf(false) }</span>
+
+<span class="nc bnc" id="L104" title="All 4 branches missed.">    LaunchedEffect(auth.currentUser?.uid) {</span>
+<span class="nc bnc" id="L105" title="All 2 branches missed.">        val uid = auth.currentUser?.uid</span>
+<span class="nc bnc" id="L106" title="All 2 branches missed.">        if (uid != null) {</span>
+<span class="nc" id="L107">            FirebaseManager.getUserProfile(</span>
+<span class="nc" id="L108">                uid = uid,</span>
+                onResult = { fetchedUser -&gt;
+<span class="nc bnc" id="L110" title="All 2 branches missed.">                    if (fetchedUser != null) {</span>
+<span class="nc" id="L111">                        currentUser = fetchedUser</span>
+                    } else {
+<span class="nc" id="L113">                        currentUser = User(userId = uid)</span>
+                    }
+<span class="nc" id="L115">                    isProfileLoaded = true</span>
+<span class="nc" id="L116">                },</span>
+                onFailure = {
+<span class="nc" id="L118">                    Toast.makeText(context, &quot;Failed to connect to database&quot;, Toast.LENGTH_SHORT).show()</span>
+<span class="nc" id="L119">                    currentUser = User(userId = uid)</span>
+<span class="nc" id="L120">                    isProfileLoaded = true</span>
+<span class="nc" id="L121">                }</span>
+            )
+        }
+<span class="nc" id="L124">    }</span>
+
+<span class="nc bnc" id="L126" title="All 2 branches missed.">    LaunchedEffect(Unit) {</span>
+<span class="nc" id="L127">        FirebaseManager.listenToAllUsers(</span>
+<span class="nc" id="L128">            onResult = { users -&gt; allCloudUsers = users },</span>
+<span class="nc" id="L129">            onFailure = { /* Silent fail for now */ }</span>
+        )
+<span class="nc" id="L131">    }</span>
+
+<span class="nc bnc" id="L133" title="All 2 branches missed.">    if (!isProfileLoaded) {</span>
+<span class="nc" id="L134">        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {</span>
+<span class="nc" id="L135">            CircularProgressIndicator()</span>
+<span class="nc" id="L136">        }</span>
+<span class="nc" id="L137">        return</span>
+    }
+
+<span class="nc" id="L140">    val savedLat = sharedPreferences.getFloat(&quot;last_lat&quot;, 0f).toDouble()</span>
+<span class="nc" id="L141">    val savedLng = sharedPreferences.getFloat(&quot;last_lng&quot;, 0f).toDouble()</span>
+
+<span class="nc bnc" id="L143" title="All 4 branches missed.">    val defaultLat = if (savedLat != 0.0) savedLat else currentUser.locationData.publicLatitude</span>
+<span class="nc bnc" id="L144" title="All 4 branches missed.">    val defaultLng = if (savedLng != 0.0) savedLng else currentUser.locationData.publicLongitude</span>
+
+<span class="nc" id="L146">    val defaultLocation = LatLng(defaultLat, defaultLng)</span>
+<span class="nc bnc" id="L147" title="All 8 branches missed.">    val initialZoom = if (defaultLat == 0.0 &amp;&amp; defaultLng == 0.0) 2f else 14f</span>
+
+<span class="nc" id="L149">    val cameraPositionState = rememberCameraPositionState {</span>
+<span class="nc" id="L150">        position = CameraPosition.fromLatLngZoom(defaultLocation, initialZoom)</span>
+<span class="nc" id="L151">    }</span>
+
+<span class="nc bnc" id="L153" title="All 2 branches missed.">    Scaffold(</span>
+<span class="nc" id="L154">        bottomBar = {</span>
+<span class="nc bnc" id="L155" title="All 2 branches missed.">            NavigationBar {</span>
+<span class="nc" id="L156">                NavigationBarItem(</span>
+<span class="nc bnc" id="L157" title="All 2 branches missed.">                    icon = { Icon(Icons.Filled.Place, contentDescription = &quot;Map&quot;) },</span>
+<span class="nc bnc" id="L158" title="All 2 branches missed.">                    label = { Text(&quot;Map&quot;) },</span>
+<span class="nc" id="L159">                    selected = currentRoute == &quot;map&quot;,</span>
+<span class="nc" id="L160">                    onClick = { currentRoute = &quot;map&quot; }</span>
+                )
+<span class="nc" id="L162">                NavigationBarItem(</span>
+<span class="nc bnc" id="L163" title="All 2 branches missed.">                    icon = { Icon(Icons.Filled.Message, contentDescription = &quot;Messages&quot;) },</span>
+<span class="nc bnc" id="L164" title="All 2 branches missed.">                    label = { Text(&quot;Messages&quot;) },</span>
+<span class="nc" id="L165">                    selected = currentRoute == &quot;messages&quot;,</span>
+<span class="nc" id="L166">                    onClick = { currentRoute = &quot;messages&quot; }</span>
+                )
+<span class="nc" id="L168">                NavigationBarItem(</span>
+<span class="nc bnc" id="L169" title="All 2 branches missed.">                    icon = { Icon(Icons.Filled.AccountCircle, contentDescription = &quot;Profile&quot;) },</span>
+<span class="nc bnc" id="L170" title="All 2 branches missed.">                    label = { Text(&quot;Profile&quot;) },</span>
+<span class="nc" id="L171">                    selected = currentRoute == &quot;profile&quot;,</span>
+<span class="nc" id="L172">                    onClick = { currentRoute = &quot;profile&quot; }</span>
+                )
+<span class="nc bnc" id="L174" title="All 2 branches missed.">                NavigationBarItem(</span>
+<span class="nc bnc" id="L175" title="All 2 branches missed.">                    icon = { Icon(Icons.Filled.Settings, contentDescription = &quot;Settings&quot;) },</span>
+<span class="nc bnc" id="L176" title="All 2 branches missed.">                    label = { Text(&quot;Settings&quot;) },</span>
+<span class="nc" id="L177">                    selected = currentRoute == &quot;settings&quot;,</span>
+<span class="nc" id="L178">                    onClick = { currentRoute = &quot;settings&quot; }</span>
+                )
+<span class="nc" id="L180">            }</span>
+<span class="nc" id="L181">        }</span>
+<span class="nc" id="L182">    ) { innerPadding -&gt;</span>
+<span class="nc" id="L183">        Box(modifier = Modifier.padding(innerPadding)) {</span>
+<span class="nc bnc" id="L184" title="All 13 branches missed.">            when (currentRoute) {</span>
+<span class="nc" id="L185">                &quot;map&quot; -&gt; LocationPermissionScreen(</span>
+<span class="nc" id="L186">                    currentUser = currentUser,</span>
+<span class="nc" id="L187">                    cameraPositionState = cameraPositionState,</span>
+<span class="nc" id="L188">                    allCloudUsers = allCloudUsers,</span>
+<span class="nc" id="L189">                    onUserUpdate = { updatedUser -&gt;</span>
+<span class="nc" id="L190">                        currentUser = updatedUser</span>
+<span class="nc" id="L191">                        FirebaseManager.saveUserProfile(updatedUser, {}, {})</span>
+<span class="nc" id="L192">                    }</span>
+                )
+
+<span class="nc" id="L195">                &quot;messages&quot; -&gt; MessagesScreen()</span>
+
+<span class="nc" id="L197">                &quot;profile&quot; -&gt; {</span>
+<span class="nc bnc" id="L198" title="All 2 branches missed.">                    if (isSavingProfile) {</span>
+<span class="nc" id="L199">                        Box(modifier = Modifier.fillMaxSize().padding(bottom = 50.dp), contentAlignment = Alignment.Center) {</span>
+<span class="nc" id="L200">                            CircularProgressIndicator()</span>
+<span class="nc" id="L201">                        }</span>
+                    }
+
+<span class="nc" id="L204">                    ProfileScreen(</span>
+<span class="nc" id="L205">                        user = currentUser,</span>
+<span class="nc" id="L206">                        onUserChange = { updatedUser -&gt; currentUser = updatedUser },</span>
+<span class="nc" id="L207">                        onSaveProfile = {</span>
+<span class="nc bnc" id="L208" title="All 2 branches missed.">                            if (isSavingProfile) return@ProfileScreen</span>
+<span class="nc" id="L209">                            isSavingProfile = true</span>
+
+<span class="nc" id="L211">                            val imageUrl = currentUser.profileImageUrls.firstOrNull()</span>
+
+<span class="nc bnc" id="L213" title="All 4 branches missed.">                            if (imageUrl != null &amp;&amp; imageUrl.startsWith(&quot;content://&quot;)) {</span>
+<span class="nc" id="L214">                                val uri = android.net.Uri.parse(imageUrl)</span>
+
+                                // LOCAL FILE SIZE CHECK
+<span class="nc" id="L217">                                val fileSize = try {</span>
+<span class="nc bnc" id="L218" title="All 2 branches missed.">                                    context.contentResolver.openAssetFileDescriptor(uri, &quot;r&quot;)?.length ?: 0L</span>
+<span class="nc" id="L219">                                } catch (e: Exception) {</span>
+<span class="nc" id="L220">                                    0L</span>
+                                }
+
+<span class="nc bnc" id="L223" title="All 2 branches missed.">                                if (fileSize &gt; 5242880L) { // 5MB limit</span>
+<span class="nc" id="L224">                                    isSavingProfile = false</span>
+<span class="nc" id="L225">                                    Toast.makeText(context, &quot;Image is too large. Limit is 5MB.&quot;, Toast.LENGTH_LONG).show()</span>
+<span class="nc" id="L226">                                    return@ProfileScreen</span>
+                                }
+
+<span class="nc" id="L229">                                Toast.makeText(context, &quot;Uploading image...&quot;, Toast.LENGTH_SHORT).show()</span>
+
+<span class="nc" id="L231">                                FirebaseManager.uploadProfileImage(</span>
+<span class="nc" id="L232">                                    uri = uri,</span>
+                                    onSuccess = { publicDownloadUrl: String -&gt;
+                                        // Inject the public URL into the object before saving to Firestore
+<span class="nc" id="L235">                                        val finalUser = currentUser.copy(profileImageUrls = listOf(publicDownloadUrl))</span>
+
+<span class="nc" id="L237">                                        FirebaseManager.saveUserProfile(</span>
+<span class="nc" id="L238">                                            user = finalUser,</span>
+                                            onSuccess = {
+<span class="nc" id="L240">                                                currentUser = finalUser</span>
+<span class="nc" id="L241">                                                isSavingProfile = false</span>
+<span class="nc" id="L242">                                                Toast.makeText(context, &quot;Profile Saved!&quot;, Toast.LENGTH_SHORT).show()</span>
+<span class="nc" id="L243">                                            },</span>
+                                            onFailure = {
+<span class="nc" id="L245">                                                isSavingProfile = false</span>
+<span class="nc" id="L246">                                                Toast.makeText(context, &quot;Failed to save profile.&quot;, Toast.LENGTH_SHORT).show()</span>
+<span class="nc" id="L247">                                            }</span>
+                                        )
+<span class="nc" id="L249">                                    },</span>
+                                    onFailure = { error: Exception -&gt;
+<span class="nc" id="L251">                                        isSavingProfile = false</span>
+<span class="nc bnc" id="L252" title="All 2 branches missed.">                                        val errorMsg = error.message ?: &quot;Image upload failed.&quot;</span>
+<span class="nc" id="L253">                                        Log.e(&quot;UploadError&quot;, &quot;Firebase Storage failed: $errorMsg&quot;)</span>
+<span class="nc" id="L254">                                        Toast.makeText(context, errorMsg, Toast.LENGTH_LONG).show()</span>
+<span class="nc" id="L255">                                    }</span>
+                                )
+<span class="nc bnc" id="L257" title="All 6 branches missed.">                            } else if (imageUrl.isNullOrEmpty()) {</span>
+                                // User removed the photo. Delete from Storage, then save the empty array to Firestore.
+<span class="nc" id="L259">                                FirebaseManager.deleteProfileImage(</span>
+                                    onSuccess = {
+<span class="nc" id="L261">                                        FirebaseManager.saveUserProfile(</span>
+<span class="nc" id="L262">                                            user = currentUser,</span>
+                                            onSuccess = {
+<span class="nc" id="L264">                                                isSavingProfile = false</span>
+<span class="nc" id="L265">                                                Toast.makeText(context, &quot;Profile Saved! Photo removed.&quot;, Toast.LENGTH_SHORT).show()</span>
+<span class="nc" id="L266">                                            },</span>
+                                            onFailure = {
+<span class="nc" id="L268">                                                isSavingProfile = false</span>
+<span class="nc" id="L269">                                                Toast.makeText(context, &quot;Failed to save profile.&quot;, Toast.LENGTH_SHORT).show()</span>
+<span class="nc" id="L270">                                            }</span>
+                                        )
+<span class="nc" id="L272">                                    },</span>
+                                    onFailure = {
+<span class="nc" id="L274">                                        isSavingProfile = false</span>
+<span class="nc" id="L275">                                        Toast.makeText(context, &quot;Failed to delete old photo.&quot;, Toast.LENGTH_SHORT).show()</span>
+<span class="nc" id="L276">                                    }</span>
+                                )
+                            } else {
+                                // Image is already an HTTPS URL, just save text changes
+<span class="nc" id="L280">                                FirebaseManager.saveUserProfile(</span>
+<span class="nc" id="L281">                                    user = currentUser,</span>
+                                    onSuccess = {
+<span class="nc" id="L283">                                        isSavingProfile = false</span>
+<span class="nc" id="L284">                                        Toast.makeText(context, &quot;Profile Saved!&quot;, Toast.LENGTH_SHORT).show()</span>
+<span class="nc" id="L285">                                    },</span>
+                                    onFailure = {
+<span class="nc" id="L287">                                        isSavingProfile = false</span>
+<span class="nc" id="L288">                                        Toast.makeText(context, &quot;Failed to save profile.&quot;, Toast.LENGTH_SHORT).show()</span>
+<span class="nc" id="L289">                                    }</span>
+                                )
+                            }
+<span class="nc" id="L292">                        }</span>
+                    )
+                }
+
+<span class="nc" id="L296">                &quot;settings&quot; -&gt; SettingsScreen(</span>
+<span class="nc" id="L297">                    privacySettings = currentUser.privacySettings,</span>
+<span class="nc" id="L298">                    onSettingsChange = { newSettings -&gt;</span>
+<span class="nc" id="L299">                        val updatedUser = currentUser.copy(privacySettings = newSettings)</span>
+<span class="nc" id="L300">                        currentUser = updatedUser</span>
+<span class="nc" id="L301">                        FirebaseManager.saveUserProfile(updatedUser, {}, {})</span>
+<span class="nc" id="L302">                    },</span>
+<span class="nc" id="L303">                    onSignOut = onSignOut</span>
+                )
+            }
+<span class="nc" id="L306">        }</span>
+<span class="nc" id="L307">    }</span>
+<span class="nc bnc" id="L308" title="All 4 branches missed.">}</span>
+
+<span class="nc" id="L310">@Composable</span>
+fun LocationPermissionScreen(
+    currentUser: User,
+    cameraPositionState: CameraPositionState,
+    allCloudUsers: List&lt;User&gt;,
+    onUserUpdate: (User) -&gt; Unit
+<span class="nc bnc" id="L316" title="All 26 branches missed.">) {</span>
+<span class="nc" id="L317">    var hasLocationPermission by remember { mutableStateOf(false) }</span>
+
+<span class="nc" id="L319">    val permissionLauncher = rememberLauncherForActivityResult(</span>
+<span class="nc" id="L320">        contract = ActivityResultContracts.RequestMultiplePermissions()</span>
+<span class="nc" id="L321">    ) { permissions -&gt;</span>
+<span class="nc bnc" id="L322" title="All 2 branches missed.">        hasLocationPermission = permissions[Manifest.permission.ACCESS_COARSE_LOCATION] == true ||</span>
+<span class="nc bnc" id="L323" title="All 2 branches missed.">                permissions[Manifest.permission.ACCESS_FINE_LOCATION] == true</span>
+<span class="nc" id="L324">    }</span>
+
+<span class="nc bnc" id="L326" title="All 8 branches missed.">    LaunchedEffect(currentUser.privacySettings.usePreciseLocation) {</span>
+<span class="nc bnc" id="L327" title="All 2 branches missed.">        val permissionsToRequest = if (currentUser.privacySettings.usePreciseLocation) {</span>
+            arrayOf(
+<span class="nc" id="L329">                Manifest.permission.ACCESS_FINE_LOCATION,</span>
+<span class="nc" id="L330">                Manifest.permission.ACCESS_COARSE_LOCATION</span>
+            )
+        } else {
+            arrayOf(
+<span class="nc" id="L334">                Manifest.permission.ACCESS_COARSE_LOCATION</span>
+            )
+        }
+<span class="nc" id="L337">        permissionLauncher.launch(permissionsToRequest)</span>
+<span class="nc" id="L338">    }</span>
+
+<span class="nc bnc" id="L340" title="All 2 branches missed.">    BeaconMapScreen(</span>
+<span class="nc" id="L341">        currentUser = currentUser,</span>
+<span class="nc" id="L342">        cameraPositionState = cameraPositionState,</span>
+<span class="nc" id="L343">        allCloudUsers = allCloudUsers,</span>
+<span class="nc" id="L344">        hasLocationPermission = hasLocationPermission,</span>
+<span class="nc" id="L345">        onUserUpdate = onUserUpdate</span>
+    )
+<span class="nc bnc" id="L347" title="All 2 branches missed.">}</span>
+
+<span class="nc" id="L349">@OptIn(ExperimentalMaterial3Api::class)</span>
+@SuppressLint(&quot;MissingPermission&quot;)
+@Composable
+fun BeaconMapScreen(
+    currentUser: User,
+    cameraPositionState: CameraPositionState,
+    allCloudUsers: List&lt;User&gt;,
+    hasLocationPermission: Boolean,
+    onUserUpdate: (User) -&gt; Unit
+<span class="nc bnc" id="L358" title="All 30 branches missed.">) {</span>
+<span class="nc" id="L359">    val context = LocalContext.current</span>
+<span class="nc" id="L360">    val fusedLocationClient = remember { LocationServices.getFusedLocationProviderClient(context) }</span>
+<span class="nc" id="L361">    val sharedPreferences = remember { context.getSharedPreferences(&quot;HeyTherePrefs&quot;, Context.MODE_PRIVATE) }</span>
+
+<span class="nc" id="L363">    var currentMapType by remember { mutableStateOf(MapType.NORMAL) }</span>
+<span class="nc" id="L364">    var currentTick by remember { mutableStateOf(System.currentTimeMillis()) }</span>
+
+<span class="nc" id="L366">    var myPhysicalLocation by remember { mutableStateOf&lt;LatLng?&gt;(null) }</span>
+
+<span class="nc" id="L368">    var searchRadiusKm by remember { mutableFloatStateOf(10f) }</span>
+<span class="nc" id="L369">    var sortByDistance by remember { mutableStateOf(true) }</span>
+
+<span class="nc" id="L371">    var selectedUserId by remember { mutableStateOf&lt;String?&gt;(null) }</span>
+
+<span class="nc" id="L373">    val scaffoldState = rememberBottomSheetScaffoldState(</span>
+<span class="nc" id="L374">        bottomSheetState = rememberStandardBottomSheetState(</span>
+<span class="nc" id="L375">            initialValue = SheetValue.PartiallyExpanded,</span>
+<span class="nc" id="L376">            skipHiddenState = true</span>
+        )
+    )
+
+<span class="nc" id="L380">    LaunchedEffect(Unit) {</span>
+<span class="nc" id="L381">        while (true) {</span>
+<span class="nc" id="L382">            kotlinx.coroutines.delay(60_000L)</span>
+<span class="nc" id="L383">            currentTick = System.currentTimeMillis()</span>
+        }
+    }
+
+<span class="nc bnc" id="L387" title="All 10 branches missed.">    DisposableEffect(currentUser.privacySettings.usePreciseLocation, hasLocationPermission, currentUser.privacySettings.activeBlackoutZones) {</span>
+<span class="nc" id="L388">        val locationCallback = object : com.google.android.gms.location.LocationCallback() {</span>
+            override fun onLocationResult(result: com.google.android.gms.location.LocationResult) {
+<span class="nc bnc" id="L390" title="All 2 branches missed.">                result.lastLocation?.let { location -&gt;</span>
+<span class="nc" id="L391">                    val exactLatLng = LatLng(location.latitude, location.longitude)</span>
+<span class="nc" id="L392">                    myPhysicalLocation = exactLatLng</span>
+
+<span class="nc" id="L394">                    sharedPreferences.edit()</span>
+<span class="nc" id="L395">                        .putFloat(&quot;last_lat&quot;, exactLatLng.latitude.toFloat())</span>
+<span class="nc" id="L396">                        .putFloat(&quot;last_lng&quot;, exactLatLng.longitude.toFloat())</span>
+<span class="nc" id="L397">                        .apply()</span>
+
+<span class="nc" id="L399">                    var isInsideBlackoutZone = false</span>
+<span class="nc bnc" id="L400" title="All 2 branches missed.">                    for (zone in currentUser.privacySettings.activeBlackoutZones) {</span>
+<span class="nc" id="L401">                        val results = FloatArray(1)</span>
+<span class="nc" id="L402">                        android.location.Location.distanceBetween(</span>
+<span class="nc" id="L403">                            exactLatLng.latitude, exactLatLng.longitude,</span>
+<span class="nc" id="L404">                            zone.latitude, zone.longitude,</span>
+<span class="nc" id="L405">                            results</span>
+                        )
+<span class="nc bnc" id="L407" title="All 2 branches missed.">                        if (results[0] &lt;= zone.radiusMeters) {</span>
+<span class="nc" id="L408">                            isInsideBlackoutZone = true</span>
+<span class="nc" id="L409">                            break</span>
+                        }
+                    }
+
+<span class="nc" id="L413">                    val broadcastLat: Double</span>
+<span class="nc" id="L414">                    val broadcastLng: Double</span>
+
+<span class="nc bnc" id="L416" title="All 2 branches missed.">                    if (isInsideBlackoutZone) {</span>
+<span class="nc" id="L417">                        broadcastLat = 0.0</span>
+<span class="nc" id="L418">                        broadcastLng = 0.0</span>
+                    } else {
+<span class="nc" id="L420">                        val noiseLatLng = LocationUtils.applyLocationNoise(context, exactLatLng)</span>
+<span class="nc bnc" id="L421" title="All 2 branches missed.">                        broadcastLat = if (currentUser.privacySettings.usePreciseLocation) exactLatLng.latitude else noiseLatLng.latitude</span>
+<span class="nc bnc" id="L422" title="All 2 branches missed.">                        broadcastLng = if (currentUser.privacySettings.usePreciseLocation) exactLatLng.longitude else noiseLatLng.longitude</span>
+                    }
+
+<span class="nc bnc" id="L425" title="All 8 branches missed.">                    if (currentUser.locationData.publicLatitude != broadcastLat || currentUser.locationData.publicLongitude != broadcastLng) {</span>
+<span class="nc" id="L426">                        val newLocationData = LocationData(</span>
+<span class="nc" id="L427">                            publicLatitude = broadcastLat,</span>
+<span class="nc" id="L428">                            publicLongitude = broadcastLng,</span>
+<span class="nc" id="L429">                            lastUpdatedTimestamp = System.currentTimeMillis()</span>
+                        )
+<span class="nc" id="L431">                        onUserUpdate(currentUser.copy(locationData = newLocationData))</span>
+                    }
+<span class="nc" id="L433">                }</span>
+<span class="nc" id="L434">            }</span>
+        }
+
+<span class="nc bnc" id="L437" title="All 2 branches missed.">        if (hasLocationPermission) {</span>
+<span class="nc" id="L438">            val locationRequest = com.google.android.gms.location.LocationRequest.Builder(</span>
+<span class="nc" id="L439">                com.google.android.gms.location.Priority.PRIORITY_HIGH_ACCURACY, 5000L</span>
+<span class="nc" id="L440">            ).build()</span>
+<span class="nc" id="L441">            fusedLocationClient.requestLocationUpdates(locationRequest, locationCallback, android.os.Looper.getMainLooper())</span>
+        }
+<span class="nc" id="L443">        onDispose { fusedLocationClient.removeLocationUpdates(locationCallback) }</span>
+    }
+
+<span class="nc bnc" id="L446" title="All 2 branches missed.">    val globalActiveUsers = remember(currentUser.subscribedTags, allCloudUsers, currentUser.privacySettings.isGlobalLocationOn, hasLocationPermission, currentTick) {</span>
+<span class="nc bnc" id="L447" title="All 4 branches missed.">        if (!hasLocationPermission || !currentUser.privacySettings.isGlobalLocationOn) emptyList()</span>
+        else {
+<span class="nc" id="L449">            val tenMinutesInMillis = 10 * 60 * 1000L</span>
+<span class="nc" id="L450">            val active = allCloudUsers.filter {</span>
+<span class="nc bnc" id="L451" title="All 2 branches missed.">                it.userId != currentUser.userId &amp;&amp;</span>
+<span class="nc bnc" id="L452" title="All 2 branches missed.">                        it.privacySettings.isGlobalLocationOn &amp;&amp;</span>
+<span class="nc bnc" id="L453" title="All 2 branches missed.">                        (currentTick - it.locationData.lastUpdatedTimestamp) &lt;= tenMinutesInMillis</span>
+            }
+<span class="nc bnc" id="L455" title="All 2 branches missed.">            if (currentUser.subscribedTags.isEmpty()) active</span>
+<span class="nc" id="L456">            else active.filter { cloudUser -&gt; cloudUser.subscribedTags.any { tag -&gt; currentUser.subscribedTags.contains(tag) } }</span>
+<span class="nc" id="L457">        }</span>
+    }
+
+<span class="nc" id="L460">    val listUsers = remember(globalActiveUsers, myPhysicalLocation, searchRadiusKm, sortByDistance, currentUser.subscribedTags) {</span>
+<span class="nc bnc" id="L461" title="All 2 branches missed.">        if (myPhysicalLocation == null) return@remember emptyList&lt;Pair&lt;User, Float&gt;&gt;()</span>
+
+<span class="nc" id="L463">        globalActiveUsers.mapNotNull { targetUser -&gt;</span>
+<span class="nc bnc" id="L464" title="All 4 branches missed.">            if (targetUser.locationData.publicLatitude == 0.0) return@mapNotNull null</span>
+
+<span class="nc" id="L466">            val results = FloatArray(1)</span>
+<span class="nc" id="L467">            android.location.Location.distanceBetween(</span>
+<span class="nc" id="L468">                myPhysicalLocation!!.latitude, myPhysicalLocation!!.longitude,</span>
+<span class="nc" id="L469">                targetUser.locationData.publicLatitude, targetUser.locationData.publicLongitude,</span>
+<span class="nc" id="L470">                results</span>
+            )
+<span class="nc" id="L472">            val distanceMeters = results[0]</span>
+<span class="nc bnc" id="L473" title="All 2 branches missed.">            if (distanceMeters &lt;= searchRadiusKm * 1000) Pair(targetUser, distanceMeters) else null</span>
+<span class="nc" id="L474">        }.sortedWith { a, b -&gt;</span>
+<span class="nc bnc" id="L475" title="All 2 branches missed.">            if (sortByDistance) {</span>
+<span class="nc" id="L476">                a.second.compareTo(b.second)</span>
+            } else {
+<span class="nc" id="L478">                val aShared = a.first.subscribedTags.intersect(currentUser.subscribedTags.toSet()).size</span>
+<span class="nc" id="L479">                val bShared = b.first.subscribedTags.intersect(currentUser.subscribedTags.toSet()).size</span>
+<span class="nc bnc" id="L480" title="All 2 branches missed.">                if (aShared != bShared) bShared.compareTo(aShared)</span>
+<span class="nc" id="L481">                else a.second.compareTo(b.second)</span>
+<span class="nc" id="L482">            }</span>
+<span class="nc" id="L483">        }</span>
+    }
+
+<span class="nc" id="L486">    val mapProperties = MapProperties(isMyLocationEnabled = hasLocationPermission, mapType = currentMapType)</span>
+<span class="nc" id="L487">    val uiSettings = MapUiSettings(myLocationButtonEnabled = true, zoomControlsEnabled = false, mapToolbarEnabled = true)</span>
+
+<span class="nc bnc" id="L489" title="All 2 branches missed.">    BottomSheetScaffold(</span>
+<span class="nc" id="L490">        scaffoldState = scaffoldState,</span>
+<span class="nc" id="L491">        sheetPeekHeight = 80.dp,</span>
+<span class="nc" id="L492">        sheetContainerColor = MaterialTheme.colorScheme.surface,</span>
+<span class="nc" id="L493">        sheetContent = {</span>
+<span class="nc" id="L494">            Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp)) {</span>
+<span class="nc" id="L495">                Text(text = &quot;Nearby Users&quot;, fontSize = 20.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(bottom = 8.dp))</span>
+
+<span class="nc" id="L497">                Row(verticalAlignment = Alignment.CenterVertically) {</span>
+<span class="nc" id="L498">                    Text(&quot;Radius: ${searchRadiusKm.toInt()}km&quot;, fontSize = 14.sp, modifier = Modifier.width(90.dp))</span>
+<span class="nc" id="L499">                    Slider(</span>
+<span class="nc" id="L500">                        value = searchRadiusKm,</span>
+<span class="nc" id="L501">                        onValueChange = { searchRadiusKm = it },</span>
+<span class="nc" id="L502">                        valueRange = 1f..50f,</span>
+<span class="nc" id="L503">                        modifier = Modifier.weight(1f)</span>
+                    )
+<span class="nc" id="L505">                }</span>
+
+<span class="nc" id="L507">                Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(bottom = 8.dp)) {</span>
+<span class="nc" id="L508">                    Text(&quot;Sort by:&quot;, fontSize = 14.sp, modifier = Modifier.width(90.dp))</span>
+<span class="nc" id="L509">                    FilterChip(</span>
+<span class="nc" id="L510">                        selected = sortByDistance,</span>
+<span class="nc" id="L511">                        onClick = { sortByDistance = true },</span>
+<span class="nc bnc" id="L512" title="All 2 branches missed.">                        label = { Text(&quot;Distance&quot;) }</span>
+                    )
+<span class="nc" id="L514">                    Spacer(modifier = Modifier.width(8.dp))</span>
+<span class="nc" id="L515">                    FilterChip(</span>
+<span class="nc bnc" id="L516" title="All 2 branches missed.">                        selected = !sortByDistance,</span>
+<span class="nc" id="L517">                        onClick = { sortByDistance = false },</span>
+<span class="nc bnc" id="L518" title="All 2 branches missed.">                        label = { Text(&quot;Interests&quot;) }</span>
+                    )
+<span class="nc" id="L520">                }</span>
+
+<span class="nc" id="L522">                Divider(modifier = Modifier.padding(vertical = 8.dp))</span>
+
+<span class="nc bnc" id="L524" title="All 2 branches missed.">                if (listUsers.isEmpty()) {</span>
+<span class="nc" id="L525">                    Text(&quot;No users found nearby.&quot;, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(vertical = 16.dp))</span>
+<span class="nc" id="L526">                } else {</span>
+<span class="nc" id="L527">                    androidx.compose.foundation.lazy.LazyColumn(</span>
+<span class="nc" id="L528">                        modifier = Modifier.fillMaxWidth().heightIn(max = 400.dp)</span>
+<span class="nc" id="L529">                    ) {</span>
+<span class="nc" id="L530">                        items(listUsers.size) { index -&gt;</span>
+<span class="nc" id="L531">                            val (listUser, distance) = listUsers[index]</span>
+<span class="nc" id="L532">                            val sharedTags = listUser.subscribedTags.intersect(currentUser.subscribedTags.toSet())</span>
+<span class="nc bnc" id="L533" title="All 2 branches missed.">                            val distanceString = if (distance &lt; 1000) &quot;${distance.toInt()} m&quot; else String.format(&quot;%.1f km&quot;, distance / 1000)</span>
+
+<span class="nc" id="L535">                            Row(</span>
+<span class="nc" id="L536">                                modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),</span>
+<span class="nc" id="L537">                                verticalAlignment = Alignment.CenterVertically</span>
+                            ) {
+<span class="nc" id="L539">                                Box(</span>
+<span class="nc" id="L540">                                    modifier = Modifier.size(50.dp).clip(androidx.compose.foundation.shape.CircleShape).background(MaterialTheme.colorScheme.surfaceVariant),</span>
+<span class="nc" id="L541">                                    contentAlignment = Alignment.Center</span>
+                                ) {
+<span class="nc bnc" id="L543" title="All 8 branches missed.">                                    if (listUser.profileImageUrls.isNotEmpty() &amp;&amp; listUser.profileImageUrls.first().isNotBlank()) {</span>
+<span class="nc" id="L544">                                        coil.compose.AsyncImage(</span>
+<span class="nc" id="L545">                                            model = listUser.profileImageUrls.first(),</span>
+<span class="nc" id="L546">                                            contentDescription = &quot;Profile&quot;,</span>
+<span class="nc" id="L547">                                            modifier = Modifier.fillMaxSize(),</span>
+<span class="nc" id="L548">                                            contentScale = androidx.compose.ui.layout.ContentScale.Crop</span>
+                                        )
+<span class="nc" id="L550">                                    } else {</span>
+<span class="nc" id="L551">                                        Icon(Icons.Filled.AccountCircle, contentDescription = &quot;Profile&quot;, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(36.dp))</span>
+                                    }
+<span class="nc" id="L553">                                }</span>
+
+<span class="nc" id="L555">                                Spacer(modifier = Modifier.width(12.dp))</span>
+
+<span class="nc" id="L557">                                Column(modifier = Modifier.weight(1f)) {</span>
+<span class="nc" id="L558">                                    Text(text = listUser.displayName, fontWeight = FontWeight.Bold, fontSize = 16.sp)</span>
+<span class="nc" id="L559">                                    Text(</span>
+<span class="nc bnc" id="L560" title="All 4 branches missed.">                                        text = if (sharedTags.isNotEmpty()) sharedTags.take(3).joinToString(&quot;, &quot;) else &quot;No shared interests&quot;,</span>
+<span class="nc" id="L561">                                        fontSize = 14.sp,</span>
+<span class="nc" id="L562">                                        color = MaterialTheme.colorScheme.onSurfaceVariant</span>
+                                    )
+<span class="nc" id="L564">                                }</span>
+
+<span class="nc" id="L566">                                Text(text = distanceString, fontWeight = FontWeight.SemiBold, color = MaterialTheme.colorScheme.primary)</span>
+<span class="nc" id="L567">                            }</span>
+<span class="nc" id="L568">                        }</span>
+<span class="nc" id="L569">                    }</span>
+                }
+<span class="nc" id="L571">            }</span>
+<span class="nc" id="L572">        }</span>
+<span class="nc" id="L573">    ) { innerPadding -&gt;</span>
+<span class="nc" id="L574">        Box(modifier = Modifier.fillMaxSize().padding(innerPadding)) {</span>
+<span class="nc" id="L575">            GoogleMap(</span>
+<span class="nc" id="L576">                modifier = Modifier.fillMaxSize(),</span>
+<span class="nc" id="L577">                cameraPositionState = cameraPositionState,</span>
+<span class="nc" id="L578">                properties = mapProperties,</span>
+<span class="nc" id="L579">                uiSettings = uiSettings,</span>
+<span class="nc" id="L580">                onMapClick = { selectedUserId = null }</span>
+<span class="nc" id="L581">            ) {</span>
+<span class="nc" id="L582">                globalActiveUsers.forEach { user -&gt;</span>
+<span class="nc bnc" id="L583" title="All 8 branches missed.">                    if (user.locationData.publicLatitude != 0.0 &amp;&amp; user.locationData.publicLongitude != 0.0) {</span>
+
+<span class="nc" id="L585">                        key(user.userId) {</span>
+<span class="nc" id="L586">                            val position = LatLng(user.locationData.publicLatitude, user.locationData.publicLongitude)</span>
+<span class="nc" id="L587">                            val markerState = rememberMarkerState(position = position)</span>
+<span class="nc" id="L588">                            markerState.position = position</span>
+
+<span class="nc" id="L590">                            var userImage by remember { mutableStateOf&lt;androidx.compose.ui.graphics.ImageBitmap?&gt;(null) }</span>
+<span class="nc" id="L591">                            var mapPinIcon by remember { mutableStateOf&lt;BitmapDescriptor?&gt;(null) }</span>
+
+<span class="nc" id="L593">                            val url = user.profileImageUrls.firstOrNull()</span>
+
+                            // NEW: Added mapPinSize as a key so it redraws when the setting changes
+<span class="nc" id="L596">                            LaunchedEffect(url, currentUser.privacySettings.mapPinSize) {</span>
+<span class="nc bnc" id="L597" title="All 6 branches missed.">                                if (!url.isNullOrBlank()) {</span>
+<span class="nc" id="L598">                                    val request = coil.request.ImageRequest.Builder(context)</span>
+<span class="nc" id="L599">                                        .data(url)</span>
+<span class="nc" id="L600">                                        .allowHardware(false)</span>
+<span class="nc" id="L601">                                        .build()</span>
+
+<span class="nc" id="L603">                                    val result = context.imageLoader.execute(request)</span>
+<span class="nc bnc" id="L604" title="All 2 branches missed.">                                    if (result is coil.request.SuccessResult) {</span>
+<span class="nc" id="L605">                                        val drawable = result.drawable</span>
+<span class="nc bnc" id="L606" title="All 2 branches missed.">                                        if (drawable is BitmapDrawable) {</span>
+<span class="nc" id="L607">                                            val rawBitmap = drawable.bitmap</span>
+
+<span class="nc" id="L609">                                            userImage = rawBitmap.asImageBitmap()</span>
+
+                                            // Pass the dynamic setting directly to the graphics utility
+<span class="nc" id="L612">                                            mapPinIcon = createCircularMapPin(rawBitmap, currentUser.privacySettings.mapPinSize)</span>
+
+<span class="nc bnc" id="L614" title="All 2 branches missed.">                                            if (selectedUserId == user.userId) {</span>
+<span class="nc" id="L615">                                                markerState.showInfoWindow()</span>
+                                            }
+                                        }
+                                    }
+                                } else {
+<span class="nc" id="L620">                                    userImage = null</span>
+<span class="nc" id="L621">                                    mapPinIcon = null</span>
+                                }
+<span class="nc" id="L623">                            }</span>
+
+<span class="nc" id="L625">                            MarkerInfoWindowContent(</span>
+<span class="nc" id="L626">                                state = markerState,</span>
+<span class="nc" id="L627">                                icon = mapPinIcon,</span>
+<span class="nc" id="L628">                                onClick = {</span>
+<span class="nc" id="L629">                                    selectedUserId = user.userId</span>
+<span class="nc" id="L630">                                    false</span>
+                                },
+<span class="nc" id="L632">                                onInfoWindowClose = {</span>
+<span class="nc bnc" id="L633" title="All 2 branches missed.">                                    if (selectedUserId == user.userId) selectedUserId = null</span>
+<span class="nc" id="L634">                                }</span>
+<span class="nc" id="L635">                            ) {</span>
+<span class="nc" id="L636">                                val sharedTags = user.subscribedTags.intersect(currentUser.subscribedTags.toSet()).take(3)</span>
+<span class="nc bnc" id="L637" title="All 4 branches missed.">                                val tagsText = if (sharedTags.isNotEmpty()) sharedTags.joinToString(&quot;, &quot;) else &quot;No shared interests&quot;</span>
+<span class="nc" id="L638">                                val diffMs = System.currentTimeMillis() - user.locationData.lastUpdatedTimestamp</span>
+<span class="nc" id="L639">                                val diffMins = java.util.concurrent.TimeUnit.MILLISECONDS.toMinutes(diffMs)</span>
+<span class="nc bnc" id="L640" title="All 2 branches missed.">                                val timeString = if (diffMins &lt; 1) &quot;Just now&quot; else &quot;$diffMins mins ago&quot;</span>
+
+<span class="nc" id="L642">                                Row(modifier = Modifier.padding(8.dp), verticalAlignment = Alignment.CenterVertically) {</span>
+<span class="nc" id="L643">                                    Box(</span>
+<span class="nc" id="L644">                                        modifier = Modifier.size(48.dp).clip(androidx.compose.foundation.shape.CircleShape).background(MaterialTheme.colorScheme.primary.copy(alpha = 0.1f)),</span>
+<span class="nc" id="L645">                                        contentAlignment = Alignment.Center</span>
+                                    ) {
+<span class="nc bnc" id="L647" title="All 2 branches missed.">                                        if (userImage != null) {</span>
+<span class="nc" id="L648">                                            Image(</span>
+<span class="nc" id="L649">                                                bitmap = userImage!!,</span>
+<span class="nc" id="L650">                                                contentDescription = &quot;Profile&quot;,</span>
+<span class="nc" id="L651">                                                modifier = Modifier.fillMaxSize(),</span>
+<span class="nc" id="L652">                                                contentScale = androidx.compose.ui.layout.ContentScale.Crop</span>
+                                            )
+<span class="nc" id="L654">                                        } else {</span>
+<span class="nc" id="L655">                                            Icon(Icons.Filled.AccountCircle, contentDescription = &quot;Profile&quot;, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(32.dp))</span>
+                                        }
+<span class="nc" id="L657">                                    }</span>
+
+<span class="nc" id="L659">                                    Spacer(modifier = Modifier.width(12.dp))</span>
+
+<span class="nc" id="L661">                                    Column {</span>
+<span class="nc" id="L662">                                        Text(text = user.displayName, fontWeight = FontWeight.Bold, fontSize = 16.sp, color = androidx.compose.ui.graphics.Color.Black)</span>
+<span class="nc" id="L663">                                        Text(text = tagsText, fontSize = 14.sp, color = androidx.compose.ui.graphics.Color.Black)</span>
+<span class="nc" id="L664">                                        Spacer(modifier = Modifier.height(2.dp))</span>
+<span class="nc" id="L665">                                        Text(text = timeString, fontSize = 12.sp, color = androidx.compose.ui.graphics.Color.Gray)</span>
+<span class="nc" id="L666">                                    }</span>
+<span class="nc" id="L667">                                }</span>
+<span class="nc" id="L668">                            }</span>
+                        }
+                    }
+<span class="nc" id="L671">                }</span>
+
+<span class="nc bnc" id="L673" title="All 2 branches missed.">                if (currentUser.privacySettings.isGlobalLocationOn &amp;&amp;</span>
+<span class="nc bnc" id="L674" title="All 2 branches missed.">                    !currentUser.privacySettings.usePreciseLocation &amp;&amp;</span>
+<span class="nc bnc" id="L675" title="All 4 branches missed.">                    currentUser.locationData.publicLatitude != 0.0 &amp;&amp;</span>
+<span class="nc bnc" id="L676" title="All 6 branches missed.">                    currentUser.locationData.publicLongitude != 0.0) {</span>
+<span class="nc" id="L677">                    Marker(</span>
+<span class="nc" id="L678">                        state = MarkerState(position = LatLng(currentUser.locationData.publicLatitude, currentUser.locationData.publicLongitude)),</span>
+<span class="nc" id="L679">                        title = &quot;You (Broadcasted)&quot;,</span>
+<span class="nc" id="L680">                        snippet = &quot;This is where others see you&quot;,</span>
+<span class="nc" id="L681">                        icon = BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_ORANGE)</span>
+                    )
+                }
+<span class="nc" id="L684">            }</span>
+
+<span class="nc" id="L686">            FloatingActionButton(</span>
+<span class="nc bnc" id="L687" title="All 2 branches missed.">                onClick = { currentMapType = if (currentMapType == MapType.NORMAL) MapType.HYBRID else MapType.NORMAL },</span>
+<span class="nc" id="L688">                modifier = Modifier.align(Alignment.TopStart).padding(16.dp),</span>
+<span class="nc" id="L689">                containerColor = MaterialTheme.colorScheme.surface,</span>
+<span class="nc" id="L690">                contentColor = MaterialTheme.colorScheme.primary</span>
+<span class="nc" id="L691">            ) {</span>
+<span class="nc bnc" id="L692" title="All 2 branches missed.">                Icon(Icons.Filled.Layers, contentDescription = &quot;Toggle Map Type&quot;)</span>
+<span class="nc" id="L693">            }</span>
+<span class="nc" id="L694">        }</span>
+<span class="nc" id="L695">    }</span>
+<span class="nc bnc" id="L696" title="All 2 branches missed.">}</span>
+
+/**
+ * Takes a raw downloaded Bitmap, cuts it into a circle, adds a white border,
+ * and converts it into a Google Maps BitmapDescriptor dynamically.
+ */
+fun createCircularMapPin(bitmap: Bitmap, size: Int): BitmapDescriptor {
+<span class="nc" id="L703">    val output = Bitmap.createBitmap(size, size, Bitmap.Config.ARGB_8888)</span>
+<span class="nc" id="L704">    val canvas = Canvas(output)</span>
+
+<span class="nc" id="L706">    val scaledBitmap = Bitmap.createScaledBitmap(bitmap, size, size, false)</span>
+
+<span class="nc" id="L708">    val paint = Paint().apply {</span>
+<span class="nc" id="L709">        isAntiAlias = true</span>
+<span class="nc" id="L710">    }</span>
+<span class="nc" id="L711">    val rect = Rect(0, 0, size, size)</span>
+<span class="nc" id="L712">    val rectF = RectF(rect)</span>
+
+<span class="nc" id="L714">    canvas.drawARGB(0, 0, 0, 0)</span>
+<span class="nc" id="L715">    canvas.drawRoundRect(rectF, size / 2f, size / 2f, paint)</span>
+
+<span class="nc" id="L717">    paint.xfermode = PorterDuffXfermode(PorterDuff.Mode.SRC_IN)</span>
+<span class="nc" id="L718">    canvas.drawBitmap(scaledBitmap, rect, rect, paint)</span>
+
+<span class="nc" id="L720">    paint.xfermode = null</span>
+<span class="nc" id="L721">    paint.style = Paint.Style.STROKE</span>
+<span class="nc" id="L722">    paint.color = android.graphics.Color.WHITE</span>
+    // Dynamically scale the border width to 5% of the total pin size
+<span class="nc" id="L724">    paint.strokeWidth = size / 20f</span>
+<span class="nc" id="L725">    canvas.drawRoundRect(rectF, size / 2f, size / 2f, paint)</span>
+
+<span class="nc" id="L727">    return BitmapDescriptorFactory.fromBitmap(output)</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span>Generated by the Android Gradle plugin 9.2.1</div></body></html>

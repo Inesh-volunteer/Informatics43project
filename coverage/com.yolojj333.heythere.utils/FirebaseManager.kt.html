@@ -1,0 +1,131 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>FirebaseManager.kt</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=0;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">debug</a> &gt; <a href="index.source.html" class="el_package">com.yolojj333.heythere.utils</a> &gt; <span class="el_source">FirebaseManager.kt</span></div><h1>FirebaseManager.kt</h1><pre class="source lang-java linenums">package com.yolojj333.heythere.utils
+
+import android.net.Uri
+import com.google.firebase.FirebaseApp
+import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.storage.FirebaseStorage
+import com.google.firebase.storage.StorageException
+import com.yolojj333.heythere.models.User
+
+object FirebaseManager {
+
+    // Helper to always get the explicitly named database
+    private fun getExplicitDatabase(): FirebaseFirestore {
+<span class="nc" id="L15">        return FirebaseFirestore.getInstance(FirebaseApp.getInstance(), &quot;users&quot;)</span>
+    }
+
+    /**
+     * Saves the entire User object to Firestore automatically.
+     */
+    fun saveUserProfile(user: User, onSuccess: () -&gt; Unit, onFailure: (Exception) -&gt; Unit) {
+<span class="nc" id="L22">        val db = getExplicitDatabase()</span>
+
+<span class="nc" id="L24">        db.collection(&quot;users&quot;).document(user.userId)</span>
+<span class="nc" id="L25">            .set(user)</span>
+<span class="nc" id="L26">            .addOnSuccessListener { onSuccess() }</span>
+<span class="nc" id="L27">            .addOnFailureListener { onFailure(it) }</span>
+<span class="nc" id="L28">    }</span>
+
+    /**
+     * Retrieves the User object from Firestore.
+     */
+    fun getUserProfile(uid: String, onResult: (User?) -&gt; Unit, onFailure: (Exception) -&gt; Unit) {
+<span class="nc" id="L34">        val db = getExplicitDatabase()</span>
+
+<span class="nc" id="L36">        db.collection(&quot;users&quot;).document(uid).get()</span>
+<span class="nc" id="L37">            .addOnSuccessListener { document -&gt;</span>
+<span class="nc bnc" id="L38" title="All 4 branches missed.">                if (document != null &amp;&amp; document.exists()) {</span>
+<span class="nc" id="L39">                    val user = document.toObject(User::class.java)</span>
+<span class="nc" id="L40">                    onResult(user)</span>
+                } else {
+<span class="nc" id="L42">                    onResult(null)</span>
+                }
+<span class="nc" id="L44">            }</span>
+<span class="nc" id="L45">            .addOnFailureListener { onFailure(it) }</span>
+<span class="nc" id="L46">    }</span>
+
+    /**
+     * Listens to all active users for the map.
+     */
+    fun listenToAllUsers(onResult: (List&lt;User&gt;) -&gt; Unit, onFailure: (Exception) -&gt; Unit) {
+<span class="nc" id="L52">        val db = getExplicitDatabase()</span>
+
+<span class="nc" id="L54">        db.collection(&quot;users&quot;).addSnapshotListener { snapshot, e -&gt;</span>
+<span class="nc bnc" id="L55" title="All 2 branches missed.">            if (e != null) {</span>
+<span class="nc" id="L56">                onFailure(e)</span>
+<span class="nc" id="L57">                return@addSnapshotListener</span>
+            }
+<span class="nc bnc" id="L59" title="All 2 branches missed.">            if (snapshot != null) {</span>
+<span class="nc" id="L60">                val users = snapshot.documents.mapNotNull { it.toObject(User::class.java) }</span>
+<span class="nc" id="L61">                onResult(users)</span>
+            }
+<span class="nc" id="L63">        }</span>
+<span class="nc" id="L64">    }</span>
+
+    /**
+     * Uploads the image to Cloud Storage.
+     */
+    fun uploadProfileImage(uri: Uri, onSuccess: (String) -&gt; Unit, onFailure: (Exception) -&gt; Unit) {
+<span class="nc" id="L70">        val auth = FirebaseAuth.getInstance()</span>
+<span class="nc bnc" id="L71" title="All 2 branches missed.">        val userId = auth.currentUser?.uid</span>
+
+<span class="nc bnc" id="L73" title="All 2 branches missed.">        if (userId == null) {</span>
+<span class="nc" id="L74">            onFailure(Exception(&quot;User is not authenticated.&quot;))</span>
+<span class="nc" id="L75">            return</span>
+        }
+
+<span class="nc" id="L78">        val storage = FirebaseStorage.getInstance()</span>
+<span class="nc" id="L79">        val imageRef = storage.reference.child(&quot;profile_images/$userId.jpg&quot;)</span>
+
+<span class="nc" id="L81">        imageRef.putFile(uri)</span>
+<span class="nc" id="L82">            .addOnSuccessListener {</span>
+<span class="nc" id="L83">                imageRef.downloadUrl</span>
+<span class="nc" id="L84">                    .addOnSuccessListener { downloadUri -&gt;</span>
+<span class="nc" id="L85">                        onSuccess(downloadUri.toString())</span>
+<span class="nc" id="L86">                    }</span>
+<span class="nc" id="L87">                    .addOnFailureListener { e -&gt;</span>
+<span class="nc" id="L88">                        onFailure(Exception(&quot;Failed to get download URL: ${e.message}&quot;))</span>
+<span class="nc" id="L89">                    }</span>
+<span class="nc" id="L90">            }</span>
+<span class="nc" id="L91">            .addOnFailureListener { e -&gt;</span>
+<span class="nc bnc" id="L92" title="All 2 branches missed.">                val errorMessage = if (e is StorageException) {</span>
+<span class="nc bnc" id="L93" title="All 3 branches missed.">                    when (e.errorCode) {</span>
+<span class="nc" id="L94">                        StorageException.ERROR_NOT_AUTHORIZED -&gt; &quot;Permission denied. Ensure the file is an image and under 5MB.&quot;</span>
+<span class="nc" id="L95">                        StorageException.ERROR_RETRY_LIMIT_EXCEEDED -&gt; &quot;Network timeout. Check your connection.&quot;</span>
+<span class="nc bnc" id="L96" title="All 2 branches missed.">                        else -&gt; e.message ?: &quot;Unknown storage error.&quot;</span>
+                    }
+                } else {
+<span class="nc bnc" id="L99" title="All 2 branches missed.">                    e.message ?: &quot;Upload failed.&quot;</span>
+                }
+<span class="nc" id="L101">                onFailure(Exception(errorMessage))</span>
+<span class="nc" id="L102">            }</span>
+<span class="nc" id="L103">    }</span>
+
+    /**
+     * Deletes the physical image file from Cloud Storage.
+     */
+    fun deleteProfileImage(onSuccess: () -&gt; Unit, onFailure: (Exception) -&gt; Unit) {
+<span class="nc" id="L109">        val auth = FirebaseAuth.getInstance()</span>
+<span class="nc bnc" id="L110" title="All 2 branches missed.">        val userId = auth.currentUser?.uid</span>
+
+<span class="nc bnc" id="L112" title="All 2 branches missed.">        if (userId == null) {</span>
+<span class="nc" id="L113">            onFailure(Exception(&quot;User is not authenticated.&quot;))</span>
+<span class="nc" id="L114">            return</span>
+        }
+
+<span class="nc" id="L117">        val storage = FirebaseStorage.getInstance()</span>
+<span class="nc" id="L118">        val imageRef = storage.reference.child(&quot;profile_images/$userId.jpg&quot;)</span>
+
+<span class="nc" id="L120">        imageRef.delete()</span>
+<span class="nc" id="L121">            .addOnSuccessListener { onSuccess() }</span>
+<span class="nc" id="L122">            .addOnFailureListener { e -&gt;</span>
+<span class="nc bnc" id="L123" title="All 4 branches missed.">                if (e is StorageException &amp;&amp; e.errorCode == StorageException.ERROR_OBJECT_NOT_FOUND) {</span>
+<span class="nc" id="L124">                    onSuccess()</span>
+                } else {
+<span class="nc" id="L126">                    onFailure(e)</span>
+                }
+<span class="nc" id="L128">            }</span>
+<span class="nc" id="L129">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span>Generated by the Android Gradle plugin 9.2.1</div></body></html>

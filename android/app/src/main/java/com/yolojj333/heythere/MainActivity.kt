@@ -488,7 +488,7 @@ fun BeaconMapScreen(
 
     BottomSheetScaffold(
         scaffoldState = scaffoldState,
-        sheetPeekHeight = 100.dp,
+        sheetPeekHeight = 80.dp,
         sheetContainerColor = MaterialTheme.colorScheme.surface,
         sheetContent = {
             Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp)) {
