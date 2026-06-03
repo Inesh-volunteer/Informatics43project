@@ -3,7 +3,11 @@ import FirebaseAuth
 import FirebaseFirestore
 
 struct ContentView: View {
-    @State private var isUserLoggedIn = Auth.auth().currentUser != nil
+    @State private var isUserLoggedIn: Bool = {
+    if CommandLine.arguments.contains("--loggedOut") { return false }
+    if CommandLine.arguments.contains("--loggedIn") { return true }
+    return Auth.auth().currentUser != nil
+}()
     @State private var selectedTab = "map"
     
     var body: some View {
