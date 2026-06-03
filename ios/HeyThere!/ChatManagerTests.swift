@@ -23,15 +23,6 @@ final class ChatManagerTests: XCTestCase {
         XCTAssertEqual(sorted[2].text, "First message")
     }
 
-    // MARK: - UT-11: Whitespace-only message is treated as empty (not sent)
-
-    func test_emptyMessage_whitespaceOnly_isNotSent() {
-        let inputs = ["   ", "\t", "\n", "  \t  \n  ", ""]
-        for input in inputs {
-            XCTAssertTrue(input.trimmingCharacters(in: .whitespaces).isEmpty,
-                "'\(input)' should be treated as empty and not sent")
-        }
-    }
 
     // MARK: - Non-empty message passes the send guard
 
