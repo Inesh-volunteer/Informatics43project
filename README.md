@@ -51,4 +51,8 @@ Update 5/25/26 Online
 
 Finished and released the iOS prototype of HeyThere! Developed by Inesh
 
+Meeting #6 (5/27/26) In-Person Inesh Agarwal, Sinjon Dearborn, Jayden Jieyu Lee, Annika Liu, Justin Gia Tran
 
+Discussed HW #4 for a bit, presented our Android/IOS live demos in class -- couldn't, so we moved the dates and presented on Friday (5/29/26) instead
+
+<img width="165" height="258" alt="happy-cat" src="https://github.com/user-attachments/assets/cf1b5aa1-e246-4eaf-877a-8f7ba183867b" />
