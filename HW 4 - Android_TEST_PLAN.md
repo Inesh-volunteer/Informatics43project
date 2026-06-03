@@ -139,7 +139,7 @@ JAVA_HOME=/usr/lib/jvm/java-21-openjdk ANDROID_HOME="$HOME/Android/Sdk" \
 JAVA_HOME=/usr/lib/jvm/java-21-openjdk ANDROID_HOME="$HOME/Android/Sdk" \
   ./gradlew :app:createDebugUnitTestCoverageReport
 # -> android/app/build/reports/coverage/test/debug/index.html
-#    (a committed copy lives in /coverage/index.html)
+#    (a committed copy lives in /coverage/android/index.html)
 
 # Instrumented test (needs a connected device/emulator):
 #   ./gradlew :app:connectedDebugAndroidTest
@@ -155,7 +155,7 @@ JAVA_HOME=/usr/lib/jvm/java-21-openjdk ANDROID_HOME="$HOME/Android/Sdk" \
 
 ## 2.5 Coverage achieved
 
-**Last updated: 2026-05-31 (working tree on commit `c1a1efa`)** · Tool: **JaCoCo 0.8.12** via AGP `enableUnitTestCoverage` (`createDebugUnitTestCoverageReport`). HTML committed at `/coverage/index.html`.
+**Last updated: 2026-05-31 (working tree on commit `c1a1efa`)** · Tool: **JaCoCo 0.8.12** via AGP `enableUnitTestCoverage` (`createDebugUnitTestCoverageReport`). HTML committed at `/coverage/android/index.html`.
 
 | Test type | Scope | Coverage |
 |---|---|---|
