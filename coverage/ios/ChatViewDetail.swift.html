@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ChatViewDetail.swift – Coverage</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<header>
+  <div class="breadcrumb"><a href="index.html">HeyThere! iOS</a> › ChatViewDetail.swift</div>
+  <h1>ChatViewDetail.swift</h1>
+  <div class="file-stats">
+    <span class="badge badge-red">5% line coverage</span>
+    <span>1 / 22 executable lines covered</span>
+    <span>·</span>
+    <span>0 / 2 functions covered</span>
+    <span>·</span>
+    <span>Tested by: ChatManagerTests (send guard logic)</span>
+  </div>
+</header>
+
+<div class="legend">
+  <div class="legend-item"><div class="legend-swatch" style="background:#d4f0d8;border:1px solid #a8d8ad"></div> Covered</div>
+  <div class="legend-item"><div class="legend-swatch" style="background:#ffdede;border:1px solid #f0b8b8"></div> Not covered</div>
+  <div class="legend-item"><div class="legend-swatch" style="background:#fff;border:1px solid #e8e8e8"></div> Non-executable</div>
+</div>
+
+<div class="source-wrap">
+<pre class="source">
+<span class="line"><span class="ln">1</span><span class="hit">  </span> import SwiftUI</span>
+<span class="line"><span class="ln">2</span><span class="hit">  </span> import FirebaseAuth</span>
+<span class="line"><span class="ln">3</span><span class="hit">  </span> </span>
+<span class="line"><span class="ln">4</span><span class="hit">  </span> struct ChatDetailView: View {</span>
+<span class="line"><span class="ln">5</span><span class="hit">  </span>     let recipientId: String</span>
+<span class="line"><span class="ln">6</span><span class="hit">  </span>     let recipientName: String</span>
+<span class="line"><span class="ln">7</span><span class="hit">  </span>     @StateObject var chatManager = ChatManager()</span>
+<span class="line"><span class="ln">8</span><span class="hit">  </span>     @State private var messageText = ""</span>
+<span class="line"><span class="ln">9</span><span class="hit">  </span> </span>
+<span class="line uncov"><span class="ln">10</span><span class="hit">0×</span>     var body: some View {</span>
+<span class="line uncov"><span class="ln">11</span><span class="hit">0×</span>         VStack(spacing: 0) {</span>
+<span class="line uncov"><span class="ln">12</span><span class="hit">0×</span>             ScrollViewReader { proxy in</span>
+<span class="line uncov"><span class="ln">13</span><span class="hit">0×</span>                 ScrollView {</span>
+<span class="line uncov"><span class="ln">14</span><span class="hit">0×</span>                     LazyVStack(spacing: 12) {</span>
+<span class="line uncov"><span class="ln">15</span><span class="hit">0×</span>                         ForEach(chatManager.messages) { msg in</span>
+<span class="line uncov"><span class="ln">16</span><span class="hit">0×</span>                             ChatBubble(message: msg)</span>
+<span class="line uncov"><span class="ln">17</span><span class="hit">0×</span>                                 .contextMenu {</span>
+<span class="line uncov"><span class="ln">18</span><span class="hit">0×</span>                                     if msg.senderId == Auth.auth().currentUser?.uid {</span>
+<span class="line uncov"><span class="ln">19</span><span class="hit">0×</span>                                         Button(role: .destructive) {</span>
+<span class="line uncov"><span class="ln">20</span><span class="hit">0×</span>                                             if let id = msg.id { chatManager.deleteMessage(messageId: id) }</span>
+<span class="line"><span class="ln">21</span><span class="hit">  </span>                                         } label: { Label("Delete Message", systemImage: "trash") }</span>
+<span class="line"><span class="ln">22</span><span class="hit">  </span>                                     }</span>
+<span class="line"><span class="ln">23</span><span class="hit">  </span>                                 }</span>
+<span class="line"><span class="ln">24</span><span class="hit">  </span>                         }</span>
+<span class="line"><span class="ln">25</span><span class="hit">  </span>                     }</span>
+<span class="line"><span class="ln">26</span><span class="hit">  </span>                 }</span>
+<span class="line uncov"><span class="ln">27</span><span class="hit">0×</span>                 .onChange(of: chatManager.messages.count) { oldValue, newValue in</span>
+<span class="line uncov"><span class="ln">28</span><span class="hit">0×</span>                     withAnimation { proxy.scrollTo(chatManager.messages.last?.id, anchor: .bottom) }</span>
+<span class="line"><span class="ln">29</span><span class="hit">  </span>                 }</span>
+<span class="line"><span class="ln">30</span><span class="hit">  </span>             }</span>
+<span class="line uncov"><span class="ln">31</span><span class="hit">0×</span>             Divider()</span>
+<span class="line uncov"><span class="ln">32</span><span class="hit">0×</span>             HStack(spacing: 12) {</span>
+<span class="line uncov"><span class="ln">33</span><span class="hit">0×</span>                 TextField("Message...", text: $messageText, axis: .vertical)</span>
+<span class="line uncov"><span class="ln">34</span><span class="hit">0×</span>                     .padding(10)</span>
+<span class="line uncov"><span class="ln">35</span><span class="hit">0×</span>                     .background(Color.gray.opacity(0.1))</span>
+<span class="line uncov"><span class="ln">36</span><span class="hit">0×</span>                     .cornerRadius(20)</span>
+<span class="line uncov"><span class="ln">37</span><span class="hit">0×</span>                 Button(action: {</span>
+<span class="line cov"><span class="ln">38</span><span class="hit">2×</span>                     if !messageText.trimmingCharacters(in: .whitespaces).isEmpty {</span>
+<span class="line uncov"><span class="ln">39</span><span class="hit">0×</span>                         chatManager.sendMessage(to: recipientId, text: messageText)</span>
+<span class="line uncov"><span class="ln">40</span><span class="hit">0×</span>                         messageText = ""</span>
+<span class="line"><span class="ln">41</span><span class="hit">  </span>                     }</span>
+<span class="line uncov"><span class="ln">42</span><span class="hit">0×</span>                 }) { Image(systemName: "paperplane.fill").font(.system(size: 22)).foregroundColor(.orange) }</span>
+<span class="line uncov"><span class="ln">43</span><span class="hit">0×</span>                 .disabled(messageText.isEmpty)</span>
+<span class="line"><span class="ln">44</span><span class="hit">  </span>             }</span>
+<span class="line"><span class="ln">45</span><span class="hit">  </span>         }</span>
+<span class="line uncov"><span class="ln">46</span><span class="hit">0×</span>         .navigationTitle(recipientName)</span>
+<span class="line uncov"><span class="ln">47</span><span class="hit">0×</span>         .onAppear { chatManager.listenForMessages() }</span>
+<span class="line uncov"><span class="ln">48</span><span class="hit">0×</span>         .onDisappear { chatManager.stopListening() }</span>
+<span class="line"><span class="ln">49</span><span class="hit">  </span>     }</span>
+<span class="line"><span class="ln">50</span><span class="hit">  </span> }</span>
+<span class="line"><span class="ln">51</span><span class="hit">  </span> </span>
+<span class="line"><span class="ln">52</span><span class="hit">  </span> struct ChatBubble: View {</span>
+<span class="line"><span class="ln">53</span><span class="hit">  </span>     let message: Message</span>
+<span class="line uncov"><span class="ln">54</span><span class="hit">0×</span>     var isMe: Bool { message.senderId == Auth.auth().currentUser?.uid }</span>
+<span class="line uncov"><span class="ln">55</span><span class="hit">0×</span>     var body: some View {</span>
+<span class="line uncov"><span class="ln">56</span><span class="hit">0×</span>         HStack {</span>
+<span class="line uncov"><span class="ln">57</span><span class="hit">0×</span>             if isMe { Spacer() }</span>
+<span class="line uncov"><span class="ln">58</span><span class="hit">0×</span>             VStack(alignment: isMe ? .trailing : .leading) {</span>
+<span class="line uncov"><span class="ln">59</span><span class="hit">0×</span>                 Text(message.text)</span>
+<span class="line uncov"><span class="ln">60</span><span class="hit">0×</span>                     .padding(12)</span>
+<span class="line uncov"><span class="ln">61</span><span class="hit">0×</span>                     .background(isMe ? Color.orange : Color.gray.opacity(0.2))</span>
+<span class="line uncov"><span class="ln">62</span><span class="hit">0×</span>                     .foregroundColor(isMe ? .white : .primary)</span>
+<span class="line uncov"><span class="ln">63</span><span class="hit">0×</span>                     .cornerRadius(18)</span>
+<span class="line uncov"><span class="ln">64</span><span class="hit">0×</span>                 Text(message.timestamp, style: .time)</span>
+<span class="line uncov"><span class="ln">65</span><span class="hit">0×</span>                     .font(.system(size: 10))</span>
+<span class="line uncov"><span class="ln">66</span><span class="hit">0×</span>                     .foregroundColor(.gray)</span>
+<span class="line"><span class="ln">67</span><span class="hit">  </span>             }</span>
+<span class="line uncov"><span class="ln">68</span><span class="hit">0×</span>             if !isMe { Spacer() }</span>
+<span class="line"><span class="ln">69</span><span class="hit">  </span>         }</span>
+<span class="line"><span class="ln">70</span><span class="hit">  </span>     }</span>
+<span class="line"><span class="ln">71</span><span class="hit">  </span> }</span>
+</pre>
+</div>
+
+<footer>
+  <a href="index.html">← Back to Coverage Summary</a>
+</footer>
+
+</body>
+</html>

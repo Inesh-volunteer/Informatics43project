@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ProfileView.swift – Coverage</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<header>
+  <div class="breadcrumb"><a href="index.html">HeyThere! iOS</a> › ProfileView.swift</div>
+  <h1>ProfileView.swift</h1>
+  <div class="file-stats">
+    <span class="badge badge-red">6% line coverage</span>
+    <span>2 / 35 executable lines covered</span>
+    <span>·</span>
+    <span>1 / 5 functions covered</span>
+    <span>·</span>
+    <span>Tested by: AgeGateTests (UT-07, UT-08, UT-09)</span>
+  </div>
+</header>
+
+<div class="legend">
+  <div class="legend-item"><div class="legend-swatch" style="background:#d4f0d8;border:1px solid #a8d8ad"></div> Covered</div>
+  <div class="legend-item"><div class="legend-swatch" style="background:#ffdede;border:1px solid #f0b8b8"></div> Not covered</div>
+  <div class="legend-item"><div class="legend-swatch" style="background:#fff;border:1px solid #e8e8e8"></div> Non-executable</div>
+</div>
+
+<div class="source-wrap">
+<pre class="source">
+<span class="line"><span class="ln">1</span><span class="hit">  </span> import SwiftUI</span>
+<span class="line"><span class="ln">2</span><span class="hit">  </span> import FirebaseFirestore</span>
+<span class="line"><span class="ln">3</span><span class="hit">  </span> import FirebaseAuth</span>
+<span class="line"><span class="ln">4</span><span class="hit">  </span> </span>
+<span class="line"><span class="ln">5</span><span class="hit">  </span> struct ProfileView: View {</span>
+<span class="line"><span class="ln">6</span><span class="hit">  </span>     @State private var displayName: String = ""</span>
+<span class="line"><span class="ln">7</span><span class="hit">  </span>     @State private var userBio: String = ""</span>
+<span class="line"><span class="ln">8</span><span class="hit">  </span>     @State private var birthDate = Date()</span>
+<span class="line"><span class="ln">9</span><span class="hit">  </span>     @State private var interestTags: [String] = []</span>
+<span class="line"><span class="ln">10</span><span class="hit">  </span>     @State private var newTag: String = ""</span>
+<span class="line"><span class="ln">11</span><span class="hit">  </span>     @State private var isSaving = false</span>
+<span class="line"><span class="ln">12</span><span class="hit">  </span>     @State private var errorMessage = ""</span>
+<span class="line"><span class="ln">13</span><span class="hit">  </span> </span>
+<span class="line cov"><span class="ln">14</span><span class="hit">5×</span>     var userAge: Int {</span>
+<span class="line cov"><span class="ln">15</span><span class="hit">5×</span>         Calendar.current.dateComponents([.year], from: birthDate, to: Date()).year ?? 0</span>
+<span class="line"><span class="ln">16</span><span class="hit">  </span>     }</span>
+<span class="line"><span class="ln">17</span><span class="hit">  </span> </span>
+<span class="line uncov"><span class="ln">18</span><span class="hit">0×</span>     var body: some View {</span>
+<span class="line uncov"><span class="ln">19</span><span class="hit">0×</span>         Form {</span>
+<span class="line uncov"><span class="ln">20</span><span class="hit">0×</span>             Section(header: Text("Public Profile")) {</span>
+<span class="line uncov"><span class="ln">21</span><span class="hit">0×</span>                 TextField("Display Name", text: $displayName)</span>
+<span class="line uncov"><span class="ln">22</span><span class="hit">0×</span>                 DatePicker("Birthday", selection: $birthDate, displayedComponents: .date)</span>
+<span class="line uncov"><span class="ln">23</span><span class="hit">0×</span>                 TextEditor(text: $userBio).frame(height: 80)</span>
+<span class="line"><span class="ln">24</span><span class="hit">  </span>             }</span>
+<span class="line uncov"><span class="ln">25</span><span class="hit">0×</span>             Section(header: Text("Interests")) {</span>
+<span class="line uncov"><span class="ln">26</span><span class="hit">0×</span>                 if userAge &gt;= 18 {</span>
+<span class="line uncov"><span class="ln">27</span><span class="hit">0×</span>                     HStack {</span>
+<span class="line uncov"><span class="ln">28</span><span class="hit">0×</span>                         TextField("Add tag (e.g. Hiking)", text: $newTag)</span>
+<span class="line uncov"><span class="ln">29</span><span class="hit">0×</span>                         Button("Add") {</span>
+<span class="line uncov"><span class="ln">30</span><span class="hit">0×</span>                             if !newTag.isEmpty {</span>
+<span class="line uncov"><span class="ln">31</span><span class="hit">0×</span>                                 interestTags.append(newTag)</span>
+<span class="line uncov"><span class="ln">32</span><span class="hit">0×</span>                                 newTag = ""</span>
+<span class="line"><span class="ln">33</span><span class="hit">  </span>                             }</span>
+<span class="line"><span class="ln">34</span><span class="hit">  </span>                         }</span>
+<span class="line"><span class="ln">35</span><span class="hit">  </span>                     }</span>
+<span class="line uncov"><span class="ln">36</span><span class="hit">0×</span>                 } else {</span>
+<span class="line uncov"><span class="ln">37</span><span class="hit">0×</span>                     Text("⚠️ Interests are locked for users under 18.")</span>
+<span class="line uncov"><span class="ln">38</span><span class="hit">0×</span>                         .font(.caption)</span>
+<span class="line uncov"><span class="ln">39</span><span class="hit">0×</span>                         .foregroundColor(.red)</span>
+<span class="line"><span class="ln">40</span><span class="hit">  </span>                 }</span>
+<span class="line"><span class="ln">41</span><span class="hit">  </span>             }</span>
+<span class="line uncov"><span class="ln">42</span><span class="hit">0×</span>             Section {</span>
+<span class="line uncov"><span class="ln">43</span><span class="hit">0×</span>                 Button(action: saveProfile) {</span>
+<span class="line uncov"><span class="ln">44</span><span class="hit">0×</span>                     if isSaving { ProgressView() } else { Text("Save Profile").bold() }</span>
+<span class="line"><span class="ln">45</span><span class="hit">  </span>                 }</span>
+<span class="line uncov"><span class="ln">46</span><span class="hit">0×</span>                 .disabled(userAge &lt; 18 || isSaving)</span>
+<span class="line uncov"><span class="ln">47</span><span class="hit">0×</span>                 .listRowBackground(userAge &gt;= 18 ? Color.orange : Color.gray.opacity(0.3))</span>
+<span class="line uncov"><span class="ln">48</span><span class="hit">0×</span>                 .foregroundColor(.white)</span>
+<span class="line"><span class="ln">49</span><span class="hit">  </span>             }</span>
+<span class="line"><span class="ln">50</span><span class="hit">  </span>         }</span>
+<span class="line uncov"><span class="ln">51</span><span class="hit">0×</span>         .navigationTitle("Edit Profile")</span>
+<span class="line uncov"><span class="ln">52</span><span class="hit">0×</span>         .onAppear(perform: fetchUserData)</span>
+<span class="line"><span class="ln">53</span><span class="hit">  </span>     }</span>
+<span class="line"><span class="ln">54</span><span class="hit">  </span> </span>
+<span class="line uncov"><span class="ln">55</span><span class="hit">0×</span>     func fetchUserData() {</span>
+<span class="line uncov"><span class="ln">56</span><span class="hit">0×</span>         guard let uid = Auth.auth().currentUser?.uid else { return }</span>
+<span class="line uncov"><span class="ln">57</span><span class="hit">0×</span>         Firestore.firestore(database: "users").collection("users").document(uid).getDocument { snap, _ in</span>
+<span class="line uncov"><span class="ln">58</span><span class="hit">0×</span>             if let data = snap?.data() {</span>
+<span class="line uncov"><span class="ln">59</span><span class="hit">0×</span>                 self.displayName = data["displayName"] as? String ?? ""</span>
+<span class="line uncov"><span class="ln">60</span><span class="hit">0×</span>                 self.userBio = data["bio"] as? String ?? ""</span>
+<span class="line uncov"><span class="ln">61</span><span class="hit">0×</span>                 self.interestTags = data["subscribedTags"] as? [String] ?? []</span>
+<span class="line"><span class="ln">62</span><span class="hit">  </span>             }</span>
+<span class="line"><span class="ln">63</span><span class="hit">  </span>         }</span>
+<span class="line"><span class="ln">64</span><span class="hit">  </span>     }</span>
+<span class="line"><span class="ln">65</span><span class="hit">  </span> </span>
+<span class="line uncov"><span class="ln">66</span><span class="hit">0×</span>     func saveProfile() {</span>
+<span class="line uncov"><span class="ln">67</span><span class="hit">0×</span>         guard let uid = Auth.auth().currentUser?.uid else { return }</span>
+<span class="line uncov"><span class="ln">68</span><span class="hit">0×</span>         isSaving = true</span>
+<span class="line uncov"><span class="ln">69</span><span class="hit">0×</span>         let userData: [String: Any] = [</span>
+<span class="line uncov"><span class="ln">70</span><span class="hit">0×</span>             "displayName": displayName,</span>
+<span class="line uncov"><span class="ln">71</span><span class="hit">0×</span>             "age": userAge,</span>
+<span class="line uncov"><span class="ln">72</span><span class="hit">0×</span>             "bio": userBio,</span>
+<span class="line uncov"><span class="ln">73</span><span class="hit">0×</span>             "subscribedTags": interestTags</span>
+<span class="line"><span class="ln">74</span><span class="hit">  </span>         ]</span>
+<span class="line uncov"><span class="ln">75</span><span class="hit">0×</span>         Firestore.firestore(database: "users").collection("users").document(uid).setData(userData, merge: true) { _ in isSaving = false }</span>
+<span class="line"><span class="ln">76</span><span class="hit">  </span>     }</span>
+<span class="line"><span class="ln">77</span><span class="hit">  </span> </span>
+<span class="line uncov"><span class="ln">78</span><span class="hit">0×</span>     func saveInterests(tags: [String]) {</span>
+<span class="line uncov"><span class="ln">79</span><span class="hit">0×</span>         guard let uid = Auth.auth().currentUser?.uid else { return }</span>
+<span class="line uncov"><span class="ln">80</span><span class="hit">0×</span>         isSaving = true</span>
+<span class="line uncov"><span class="ln">81</span><span class="hit">0×</span>         let db = Firestore.firestore(database: "users")</span>
+<span class="line uncov"><span class="ln">82</span><span class="hit">0×</span>         db.collection("users").document(uid).setData([</span>
+<span class="line uncov"><span class="ln">83</span><span class="hit">0×</span>             "interests": tags,</span>
+<span class="line uncov"><span class="ln">84</span><span class="hit">0×</span>             "lastUpdated": Timestamp(date: Date())</span>
+<span class="line uncov"><span class="ln">85</span><span class="hit">0×</span>         ], merge: true) { error in</span>
+<span class="line uncov"><span class="ln">86</span><span class="hit">0×</span>             isSaving = false</span>
+<span class="line uncov"><span class="ln">87</span><span class="hit">0×</span>             if let error = error {</span>
+<span class="line uncov"><span class="ln">88</span><span class="hit">0×</span>                 self.errorMessage = error.localizedDescription</span>
+<span class="line"><span class="ln">89</span><span class="hit">  </span>             }</span>
+<span class="line"><span class="ln">90</span><span class="hit">  </span>         }</span>
+<span class="line"><span class="ln">91</span><span class="hit">  </span>     }</span>
+<span class="line"><span class="ln">92</span><span class="hit">  </span> }</span>
+</pre>
+</div>
+
+<footer>
+  <a href="index.html">← Back to Coverage Summary</a>
+</footer>
+
+</body>
+</html>

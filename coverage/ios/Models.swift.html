@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Models.swift – Coverage</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<header>
+  <div class="breadcrumb"><a href="index.html">HeyThere! iOS</a> › Models.swift</div>
+  <h1>Models.swift</h1>
+  <div class="file-stats">
+    <span class="badge badge-green">100% line coverage</span>
+    <span>25 / 25 executable lines covered</span>
+    <span>·</span>
+    <span>6 / 6 functions covered</span>
+    <span>·</span>
+    <span>Tested by: UserModelTests · MapFilterTests · ChatManagerTests</span>
+  </div>
+</header>
+
+<div class="legend">
+  <div class="legend-item"><div class="legend-swatch" style="background:#d4f0d8;border:1px solid #a8d8ad"></div> Covered</div>
+  <div class="legend-item"><div class="legend-swatch" style="background:#ffdede;border:1px solid #f0b8b8"></div> Not covered</div>
+  <div class="legend-item"><div class="legend-swatch" style="background:#fff;border:1px solid #e8e8e8"></div> Non-executable</div>
+</div>
+
+<div class="source-wrap">
+<pre class="source">
+<span class="line"><span class="ln">1</span><span class="hit">  </span> import Foundation</span>
+<span class="line"><span class="ln">2</span><span class="hit">  </span> import CoreLocation</span>
+<span class="line"><span class="ln">3</span><span class="hit">  </span> </span>
+<span class="line cov"><span class="ln">4</span><span class="hit">7×</span> // Main User data for the database</span>
+<span class="line cov"><span class="ln">5</span><span class="hit">7×</span> struct User: Identifiable, Codable {</span>
+<span class="line cov"><span class="ln">6</span><span class="hit">7×</span>     var id: String = ""</span>
+<span class="line cov"><span class="ln">7</span><span class="hit">7×</span>     var displayName: String = "New User"</span>
+<span class="line cov"><span class="ln">8</span><span class="hit">7×</span>     var age: Int = 0</span>
+<span class="line cov"><span class="ln">9</span><span class="hit">7×</span>     var bio: String = ""</span>
+<span class="line cov"><span class="ln">10</span><span class="hit">7×</span>     var locationData: LocationData = LocationData()</span>
+<span class="line cov"><span class="ln">11</span><span class="hit">7×</span>     var privacySettings: PrivacySettings = PrivacySettings()</span>
+<span class="line"><span class="ln">12</span><span class="hit">  </span> }</span>
+<span class="line"><span class="ln">13</span><span class="hit">  </span> </span>
+<span class="line cov"><span class="ln">14</span><span class="hit">6×</span> struct LocationData: Codable {</span>
+<span class="line cov"><span class="ln">15</span><span class="hit">6×</span>     var publicLatitude: Double = 0</span>
+<span class="line cov"><span class="ln">16</span><span class="hit">6×</span>     var publicLongitude: Double = 0</span>
+<span class="line"><span class="ln">17</span><span class="hit">  </span> }</span>
+<span class="line"><span class="ln">18</span><span class="hit">  </span> </span>
+<span class="line cov"><span class="ln">19</span><span class="hit">5×</span> struct PrivacySettings: Codable {</span>
+<span class="line cov"><span class="ln">20</span><span class="hit">5×</span>     var isGlobalLocationOn: Bool = true</span>
+<span class="line cov"><span class="ln">21</span><span class="hit">5×</span>     var usePreciseLocation: Bool = false</span>
+<span class="line"><span class="ln">22</span><span class="hit">  </span> }</span>
+<span class="line"><span class="ln">23</span><span class="hit">  </span> </span>
+<span class="line"><span class="ln">24</span><span class="hit">  </span> // For the orange 'H' pins on the map</span>
+<span class="line cov"><span class="ln">25</span><span class="hit">5×</span> struct UserPin: Identifiable {</span>
+<span class="line cov"><span class="ln">26</span><span class="hit">5×</span>     let id: String</span>
+<span class="line cov"><span class="ln">27</span><span class="hit">5×</span>     let name: String</span>
+<span class="line cov"><span class="ln">28</span><span class="hit">5×</span>     let coordinate: CLLocationCoordinate2D</span>
+<span class="line"><span class="ln">29</span><span class="hit">  </span> }</span>
+<span class="line"><span class="ln">30</span><span class="hit">  </span> </span>
+<span class="line cov"><span class="ln">31</span><span class="hit">1×</span> struct BlackoutZone: Identifiable, Codable {</span>
+<span class="line cov"><span class="ln">32</span><span class="hit">1×</span>     var id = UUID()</span>
+<span class="line cov"><span class="ln">33</span><span class="hit">1×</span>     var name: String</span>
+<span class="line cov"><span class="ln">34</span><span class="hit">1×</span>     var latitude: Double</span>
+<span class="line cov"><span class="ln">35</span><span class="hit">1×</span>     var longitude: Double</span>
+<span class="line cov"><span class="ln">36</span><span class="hit">1×</span>     var radiusMeters: Double = 200.0</span>
+<span class="line"><span class="ln">37</span><span class="hit">  </span> }</span>
+<span class="line"><span class="ln">38</span><span class="hit">  </span> </span>
+<span class="line cov"><span class="ln">39</span><span class="hit">8×</span> struct Message: Identifiable, Codable {</span>
+<span class="line cov"><span class="ln">40</span><span class="hit">8×</span>     var id: String?</span>
+<span class="line cov"><span class="ln">41</span><span class="hit">8×</span>     var senderId: String</span>
+<span class="line cov"><span class="ln">42</span><span class="hit">8×</span>     var receiverId: String</span>
+<span class="line cov"><span class="ln">43</span><span class="hit">8×</span>     var text: String</span>
+<span class="line cov"><span class="ln">44</span><span class="hit">8×</span>     var timestamp: Date</span>
+<span class="line"><span class="ln">45</span><span class="hit">  </span> }</span>
+</pre>
+</div>
+
+<footer>
+  <a href="index.html">← Back to Coverage Summary</a>
+</footer>
+
+</body>
+</html>
